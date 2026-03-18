@@ -1,0 +1,36 @@
+﻿@page "/register"
+@inject IHttpClientFactory HttpClientFactory
+@inject HttpClient Http
+
+<h3>Register</h3>
+
+<input placeholder="Email" @bind="email" />
+<input placeholder="Password" @bind="password" type="password" />
+
+<button @onclick="Regis">Register</button>
+
+<p>@message</p>
+
+@code {
+	private string email;
+	private string password;
+	private string message;
+
+	private async Task Regis()
+	{
+		var response = await Http.PostAsJsonAsync("https://localhost:7008/api/auth/register", new
+		{
+			Email = email,
+			Password = password
+		});
+
+		if(response.IsSuccessStatusCode)
+		{
+			message = "Registration successful!";
+		}
+		else
+		{
+			message = "Registration failed.";
+		}
+	}
+}

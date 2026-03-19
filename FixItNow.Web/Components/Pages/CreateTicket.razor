@@ -1,0 +1,51 @@
+﻿@page "/create-ticket"
+@using FixItNow.Domain.Models
+@inject IHttpClientFactory HttpClientFactory
+@inject HttpClient Http
+
+<h3>CreateTicket</h3>
+
+<input placeholder="Title" @bind=ticket.Title/>
+<input placeholder="Description" @bind=ticket.Description/>
+<input placeholder="Category" @bind=ticket.Category/>
+<input placeholder="Location" @bind=ticket.Location/>
+
+<button @onclick="Create">Create</button>
+
+@if (message != null)
+{
+    <p>@message</p>
+}
+
+@code {
+    private Ticket ticket = new();
+    private string message;
+
+    private async Task Create()
+    {
+        var response = await Http.PostAsJsonAsync("https://localhost:7008/api/tickets/create-ticket", new
+        {
+            Title = ticket.Title,
+            Description = ticket.Description,
+            Category = ticket.Category,
+            Location = ticket.Location
+        });
+        if(response.IsSuccessStatusCode)
+        {
+            message = "Ticket created successfully!";
+            ticket = new Ticket();
+        }
+        else
+        {
+            message = "Failed to create ticket.";
+		}
+    }
+
+    public class Ticket
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Category { get; set; }
+        public string Location { get; set; }
+	}
+}

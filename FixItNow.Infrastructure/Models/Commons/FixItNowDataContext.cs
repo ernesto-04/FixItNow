@@ -1,4 +1,5 @@
-﻿using FixItNow.Domain.Models.Accesses;
+﻿using FixItNow.Domain.Models;
+using FixItNow.Domain.Models.Accesses;
 using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Infrastructure.Models.Commons
@@ -7,6 +8,7 @@ namespace FixItNow.Infrastructure.Models.Commons
     {
         public FixItNowDataContext(DbContextOptions<FixItNowDataContext> options) : base(options) { }
         public DbSet<User> Users { get; set; }
+        public DbSet<Ticket> Tickets { get; set; }
 
     }
 }

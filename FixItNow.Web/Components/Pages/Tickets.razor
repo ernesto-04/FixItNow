@@ -17,11 +17,31 @@ else
 	<ul>
 		@foreach (var ticket in tickets)
 		{
-			<li>
+			<li style="margin-bottom:20px; border:1px solid #ccc; padding:10px;">
 				<h4>@ticket.Title</h4>
 				<p>@ticket.Description</p>
+
 				<p><strong>Category:</strong> @ticket.Category</p>
 				<p><strong>Location:</strong> @ticket.Location</p>
+				
+				<p>
+					<strong>Technician:</strong>
+					@(ticket.TechnicianName ?? "Not assigned")
+				</p>
+				
+				<p>
+					<strong>Status: @ticket.Status</strong>
+				</p>
+
+				<button disabled="@(ticket.Status == TicketStatus.InProgress || ticket.Status == TicketStatus.Completed)"
+						@onclick="() => UpdateStatus(ticket.Id, TicketStatus.InProgress)">
+					Start
+				</button>
+
+				<button disabled="@(ticket.Status == TicketStatus.Completed)"
+						@onclick="() => UpdateStatus(ticket.Id, TicketStatus.Completed)">
+					Complete
+				</button>
 			</li>
 		}
 	</ul>
@@ -32,14 +52,37 @@ else
 
 	protected override async Task OnInitializedAsync()
 	{
+		await LoadTickets();		
+	}
+
+	private async Task LoadTickets()
+	{
 		tickets = await Http.GetFromJsonAsync<List<Ticket>>("https://localhost:7008/api/tickets/get-tickets");
+	}
+
+	private async Task UpdateStatus(int ticketId, TicketStatus newStatus)
+	{
+		var statusString = newStatus.ToString();
+		await Http.PutAsync($"https://localhost:7008/api/tickets/{ticketId}/status?status={statusString}", null);
+		await LoadTickets();
 	}
 
 	public class Ticket
 	{
+		public int Id { get; set; }
 		public string Title { get; set; }
+		public string TechnicianName { get; set; }
+		public TicketStatus Status { get; set; }
 		public string Description { get; set; }
 		public string Category { get; set; }
 		public string Location { get; set; }
+	}
+	public enum TicketStatus
+	{
+		Pending,
+		Assigned,
+		InProgress,
+		Completed,
+		Unassigned
 	}
 }

@@ -28,7 +28,14 @@ namespace FixItNow.Web
         [HttpGet("get-tickets")]
         public IActionResult GetAll()
         {
-            return Ok(_context.Tickets.ToList());
+            var tickets = _ticketService.GetAllTickets();
+            return Ok(tickets);
+        }
+
+        [HttpPut("{id}/status")]
+        public IActionResult UpdateStatus(int id, TicketStatus status)
+        {
+            return Ok(_ticketService.UpdateStatus(id, status));
         }
     }
 }

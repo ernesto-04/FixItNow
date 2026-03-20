@@ -34,8 +34,8 @@ namespace FixItNow.Infrastructure.Data
 
             var technicians = new List<Technician>
             {
-                new Technician { UserId = tech1.Id, SkillTypes = "Electrical", AssignedZone  = "Building A", Status = "Available" },
-                new Technician { UserId = tech2.Id, SkillTypes = "Plumbing", AssignedZone  = "Building B", Status = "Available" },
+                new Technician { UserId = tech1.Id, Name = "Budi", SkillTypes = "Electrical", AssignedZone  = "Building A", Status = "Available" },
+                new Technician { UserId = tech2.Id, Name = "Toni", SkillTypes = "Plumbing", AssignedZone  = "Building B", Status = "Available" },
             };
             context.Technicians.AddRange(technicians);
             context.SaveChanges();

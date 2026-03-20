@@ -9,6 +9,7 @@ namespace FixItNow.Infrastructure.Models.Commons
         public FixItNowDataContext(DbContextOptions<FixItNowDataContext> options) : base(options) { }
         public DbSet<User> Users { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<Technician> Technicians { get; set; }
 
     }
 }

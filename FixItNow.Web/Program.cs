@@ -1,3 +1,5 @@
+using FixItNow.Infrastructure;
+using FixItNow.Infrastructure.Data;
 using FixItNow.Infrastructure.Models.Commons;
 using FixItNow.Web.Components;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +13,7 @@ builder.Services.AddDbContext<FixItNowDataContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
+builder.Services.AddScoped<TicketService>();
 
 var app = builder.Build();
 
@@ -31,5 +34,11 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FixItNowDataContext>();
+    Seeder.Seed(dbContext);
+}
 
 app.Run();

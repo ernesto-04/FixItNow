@@ -22,6 +22,34 @@ namespace FixItNow.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FixItNow.Domain.Models.Accesses.Technician", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AssignedZone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SkillTypes")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Technicians");
+                });
+
             modelBuilder.Entity("FixItNow.Domain.Models.Accesses.User", b =>
                 {
                     b.Property<int>("Id")
@@ -55,6 +83,9 @@ namespace FixItNow.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AssignedTechnicianId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("text");
@@ -80,7 +111,18 @@ namespace FixItNow.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssignedTechnicianId");
+
                     b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("FixItNow.Domain.Models.Ticket", b =>
+                {
+                    b.HasOne("FixItNow.Domain.Models.Accesses.Technician", "AssignedTechnician")
+                        .WithMany()
+                        .HasForeignKey("AssignedTechnicianId");
+
+                    b.Navigation("AssignedTechnician");
                 });
 #pragma warning restore 612, 618
         }

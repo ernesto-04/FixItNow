@@ -1,4 +1,4 @@
-﻿namespace FixItNow.Infrastructure.Models.DTOs
+﻿namespace FixItNow.Domain.Models.DTOs
 {
     public class RegisterDto
     {

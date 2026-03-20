@@ -1,4 +1,6 @@
-﻿namespace FixItNow.Domain.Models
+﻿using FixItNow.Domain.Models.Accesses;
+
+namespace FixItNow.Domain.Models
 {
     public class Ticket
     {
@@ -9,5 +11,7 @@
         public string Location { get; set; }
         public string Status { get; set; } = "Pending";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int? AssignedTechnicianId { get; set; }
+        public Technician? AssignedTechnician { get; set; }
     }
 }

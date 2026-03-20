@@ -1,6 +1,6 @@
 ﻿using FixItNow.Domain.Models.Accesses;
+using FixItNow.Domain.Models.DTOs;
 using FixItNow.Infrastructure.Models.Commons;
-using FixItNow.Infrastructure.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FixItNow.Web

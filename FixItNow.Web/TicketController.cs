@@ -1,4 +1,5 @@
 ﻿using FixItNow.Domain.Models;
+using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,18 +10,19 @@ namespace FixItNow.Web
     public class TicketController : ControllerBase
     {
         private readonly FixItNowDataContext _context;
+        private readonly TicketService _ticketService;
 
-        public TicketController(FixItNowDataContext context)
+        public TicketController(FixItNowDataContext context, TicketService ticketService)
         {
             _context = context;
+            _ticketService = ticketService;
         }
 
         [HttpPost("create-ticket")]
         public IActionResult Create(Ticket ticket)
         {
-            _context.Tickets.Add(ticket);
-            _context.SaveChanges();
-            return Ok(ticket);
+            var createdTicket = _ticketService.CreateTicket(ticket);
+            return Ok(createdTicket);
         }
 
         [HttpGet("get-tickets")]

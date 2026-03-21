@@ -1,4 +1,7 @@
-﻿@inherits LayoutComponentBase
+﻿@using FixItNow.Infrastructure
+@inherits LayoutComponentBase
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 
 <div class="page">
     <div class="sidebar">
@@ -7,7 +10,7 @@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <button @onclick="Logout">Logout</button>
         </div>
 
         <article class="content px-4">
@@ -21,3 +24,20 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code{
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var user = await AuthService.GetUser();
+            StateHasChanged();
+        }
+    }
+    private async Task Logout()
+    {
+        await AuthService.Logout();
+		Navigation.NavigateTo("/login");
+    }
+}

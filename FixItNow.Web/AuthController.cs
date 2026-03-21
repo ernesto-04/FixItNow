@@ -29,7 +29,24 @@ namespace FixItNow.Web
             _context.Users.Add(user);
             _context.SaveChanges();
 
-            return Ok(user);
+            return Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.Role
+            });
+        }
+
+        [HttpPost("login")]
+        public IActionResult Login(LoginDto dto)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Email == dto.Email);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            {
+                return Unauthorized();
+            }
+            // In a real application, you would generate a JWT token here
+            return Ok(new { Message = "Login successful" });
         }
     }
 }

@@ -14,6 +14,7 @@ builder.Services.AddDbContext<FixItNowDataContext>(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 builder.Services.AddScoped<TicketService>();
+builder.Services.AddScoped<AuthService>();
 
 var app = builder.Build();
 

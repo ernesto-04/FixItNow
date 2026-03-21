@@ -1,8 +1,11 @@
 ﻿@page "/create-ticket"
 @using FixItNow.Domain.Models
 @using FixItNow.Domain.Models.DTOs
+@using FixItNow.Infrastructure
 @using FixItNow.Infrastructure.Models
 @inject IHttpClientFactory HttpClientFactory
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 @inject HttpClient Http
 
 <h3>CreateTicket</h3>
@@ -28,6 +31,12 @@
     private Ticket ticket = new();
     private string message;
     private string assignedTechnician;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await AuthService.GetUser();
+        if (user == null) Navigation.NavigateTo("/login");
+    }
 
     private async Task Create()
     {

@@ -1,6 +1,9 @@
 ﻿@page "/tickets"
 @inject HttpClient Http
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 @using FixItNow.Domain.Models
+@using FixItNow.Infrastructure
 
 <h3>Tickets</h3>
 
@@ -52,6 +55,8 @@ else
 
 	protected override async Task OnInitializedAsync()
 	{
+		var user = await AuthService.GetUser();
+		if (user == null) Navigation.NavigateTo("/login");
 		await LoadTickets();		
 	}
 

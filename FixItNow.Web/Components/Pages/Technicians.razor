@@ -1,0 +1,57 @@
+﻿@page "/technicians"
+@inject HttpClient Http
+
+<h3>Technicians</h3>
+
+@if(technicians == null)
+{
+	<p>Loading...</p>
+}
+else if(technicians.Count == 0)
+{
+	<p>No technicians found.</p>
+}
+else
+{
+	<table class="table">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Name</th>
+				<th>Skill</th>
+				<th>Zone</th>
+				<th>Status</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach(var tech in technicians)
+			{
+				<tr>
+					<td>@tech.Id</td>
+					<td>@tech.Name</td>
+					<td>@tech.SkillTypes</td>
+					<td>@tech.AssignedZone</td>
+					<td>@tech.Status</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+@code {
+	private List<TechnicianDto> technicians;
+
+	protected override async Task OnInitializedAsync()
+	{
+		technicians = await Http.GetFromJsonAsync<List<TechnicianDto>>("https://localhost:7008/api/technicians");
+	}
+
+	public class TechnicianDto
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+		public string SkillTypes { get; set; }
+		public string AssignedZone { get; set; }
+		public string Status { get; set; }
+	}
+}

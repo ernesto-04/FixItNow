@@ -1,5 +1,7 @@
-﻿using FixItNow.Domain.Models.Accesses;
+﻿using System.Security.Claims;
+using FixItNow.Domain.Models.Accesses;
 using FixItNow.Domain.Models.DTOs;
+using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,10 +12,12 @@ namespace FixItNow.Web
     public class AuthController : ControllerBase
     {
         private readonly FixItNowDataContext _context;
+        private readonly JwtService _jwtService;
 
-        public AuthController(FixItNowDataContext context)
+        public AuthController(FixItNowDataContext context, JwtService jwtService)
         {
             _context = context;
+            _jwtService = jwtService;
         }
 
         [HttpPost("register")]
@@ -45,8 +49,8 @@ namespace FixItNow.Web
             {
                 return Unauthorized();
             }
-            // In a real application, you would generate a JWT token here
-            return Ok(new { Message = "Login successful" });
+            var token = _jwtService.GenerateToken(user);
+            return Ok(new { Token = token, Message = "Login successful" });
         }
     }
 }

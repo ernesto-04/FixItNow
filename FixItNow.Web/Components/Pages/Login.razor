@@ -1,0 +1,39 @@
+﻿@page "/login"
+@using FixItNow.Domain.Models.DTOs
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>Login</h3>
+
+<input placeholder="Email" @bind=email/>
+<input placeholder="Password" @bind=password type="password"/>
+
+<button @onclick="Log">Login</button>
+
+<p>@message</p>
+
+@code {
+	private string email;
+	private string password;
+	private string message;
+
+	private async Task Log()
+	{
+		var response = await Http.PostAsJsonAsync("https://localhost:7008/api/auth/login", new
+		{
+			Email = email,
+			Password = password
+		});
+		if (response.IsSuccessStatusCode)
+		{
+			var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+			await JS.InvokeVoidAsync("localStorage.setItem", "token", result.Token);
+			message = "Login successful!";
+		}
+		else
+		{
+			message = "Login failed.";
+		}
+	}
+}

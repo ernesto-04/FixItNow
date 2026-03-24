@@ -1,5 +1,6 @@
 ﻿@page "/tickets"
 @inject HttpClient Http
+@inject IJSRuntime JS
 @using FixItNow.Domain.Models
 @using FixItNow.Infrastructure
 
@@ -51,14 +52,26 @@ else
 @code {
 	private List<Ticket> tickets;
 
+
 	protected override async Task OnInitializedAsync()
 	{
-		await LoadTickets();		
+		await LoadTickets();
 	}
 
 	private async Task LoadTickets()
 	{
-		tickets = await Http.GetFromJsonAsync<List<Ticket>>("https://localhost:7008/api/tickets/get-tickets");
+		var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+		if (string.IsNullOrEmpty(token))
+		{
+			return;
+		}
+		var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7008/api/tickets/get-tickets");
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+		var response = await Http.SendAsync(request);
+		if (response.IsSuccessStatusCode)
+		{
+			tickets = await response.Content.ReadFromJsonAsync<List<Ticket>>();
+		}
 	}
 
 	private async Task UpdateStatus(int ticketId, TicketStatus newStatus)

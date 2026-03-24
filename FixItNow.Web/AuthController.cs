@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using FixItNow.Domain.Models.Accesses;
+﻿using FixItNow.Domain.Models.Accesses;
 using FixItNow.Domain.Models.DTOs;
 using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Models.Commons;
@@ -50,7 +49,7 @@ namespace FixItNow.Web
                 return Unauthorized();
             }
             var token = _jwtService.GenerateToken(user);
-            return Ok(new { Token = token, Message = "Login successful" });
+            return Ok(new { Email = user.Email, Role = user.Role, Token = token });
         }
     }
 }

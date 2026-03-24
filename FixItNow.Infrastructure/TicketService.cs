@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FixItNow.Domain.Models;
+﻿using FixItNow.Domain.Models;
 using FixItNow.Domain.Models.Accesses;
 using FixItNow.Domain.Models.DTOs;
 using FixItNow.Infrastructure.Models.Commons;
@@ -46,7 +41,7 @@ namespace FixItNow.Infrastructure
         public CreateTicketResponse CreateTicket(Ticket ticket)
         {
             var technician = AssignTechnician(ticket.Category);
-            if(technician != null)
+            if (technician != null)
             {
                 ticket.AssignedTechnicianId = technician.Id;
                 ticket.Status = TicketStatus.Assigned;

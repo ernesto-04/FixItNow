@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FixItNow.Domain.Models.Accesses;
+﻿using FixItNow.Domain.Models.Accesses;
 using FixItNow.Infrastructure.Models.Commons;
 
 namespace FixItNow.Infrastructure.Data

@@ -3,8 +3,10 @@
 @using FixItNow.Domain.Models.DTOs
 @using FixItNow.Infrastructure
 @using FixItNow.Infrastructure.Models
+@using Microsoft.AspNetCore.Authorization
 @inject IHttpClientFactory HttpClientFactory
 @inject HttpClient Http
+@attribute [Authorize]
 
 <h3>CreateTicket</h3>
 

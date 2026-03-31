@@ -18,13 +18,14 @@ namespace FixItNow.Web
             _context = context;
             _ticketService = ticketService;
         }
+        [Authorize(Roles = "Admin, User")]
         [HttpPost("create-ticket")]
         public IActionResult Create(Ticket ticket)
         {
             var createdTicket = _ticketService.CreateTicket(ticket);
             return Ok(createdTicket);
         }
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "Admin, Technician")]
         [HttpGet("get-tickets")]
         public IActionResult GetAll()
         {

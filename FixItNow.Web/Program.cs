@@ -3,9 +3,13 @@ using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Data;
 using FixItNow.Infrastructure.Models.Commons;
 using FixItNow.Web.Components;
+using FixItNow.Web.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +46,18 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<TicketService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<ProtectedLocalStorage>();
+builder.Services.AddMudServices();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.Configure<CommonOptions>(options =>
+{
+    options.LocalStorageKey = "token";
+});
+
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+
 
 var app = builder.Build();
 

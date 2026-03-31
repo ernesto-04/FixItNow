@@ -1,8 +1,11 @@
 ﻿@page "/tickets"
 @inject HttpClient Http
-@inject IJSRuntime JS
+@inject ProtectedLocalStorage LocalStorage
 @using FixItNow.Domain.Models
 @using FixItNow.Infrastructure
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
 
 <h3>Tickets</h3>
 
@@ -60,13 +63,13 @@ else
 
 	private async Task LoadTickets()
 	{
-		var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-		if (string.IsNullOrEmpty(token))
-		{
+		var token = await LocalStorage.GetAsync<string>("token");
+		if (!token.Success || string.IsNullOrEmpty(token.Value))
+	{
 			return;
 		}
 		var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7008/api/tickets/get-tickets");
-		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Value);
 		var response = await Http.SendAsync(request);
 		if (response.IsSuccessStatusCode)
 		{

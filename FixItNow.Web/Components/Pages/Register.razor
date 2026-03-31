@@ -1,6 +1,8 @@
 ﻿@page "/register"
+@using FixItNow.Web.Components.Layout
 @inject IHttpClientFactory HttpClientFactory
 @inject HttpClient Http
+@inject NavigationManager Navigation
 
 <h3>Register</h3>
 
@@ -8,6 +10,8 @@
 <input placeholder="Password" @bind="password" type="password" />
 
 <button @onclick="Regis">Register</button>
+
+<a href="/login">Login</a>
 
 <p>@message</p>
 
@@ -27,6 +31,7 @@
 		if(response.IsSuccessStatusCode)
 		{
 			message = "Registration successful!";
+			Navigation.NavigateTo("/");
 		}
 		else
 		{

@@ -1,39 +1,174 @@
-﻿@page "/login"
+﻿@page "/"
 @using FixItNow.Domain.Models.DTOs
-@inject HttpClient Http
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
+@using FixItNow.Infrastructure
+@using FixItNow.Web.Components.Layout
+@using FixItNow.Web.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@layout LoginLayout
 
-<h3>Login</h3>
+<PageTitle>Login</PageTitle>
 
-<input placeholder="Email" @bind=email/>
-<input placeholder="Password" @bind=password type="password"/>
-
-<button @onclick="Log">Login</button>
-
-<p>@message</p>
+<MudForm Model="@authRequest">
+    <MudCard Elevation="3">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudGrid>
+                    <MudItem xs="12" Class="d-flex">
+                        <MudImage Src="image/kalbe-logo.png" Fluid="true" Width="100" Height="50" Class="mx-auto" />
+                    </MudItem>
+                    <MudItem xs="12" Class="d-flex">
+                        <MudText Typo="Typo.h6" Class="mx-auto">K-MQR</MudText>
+                    </MudItem>
+                    <MudItem xs="12" Class="d-flex">
+                        <MudText Typo="Typo.caption" Class="mx-auto">(Kalbe/Key Metrics - Manufacturing, Quality, Regulatory)</MudText>
+                    </MudItem>
+                </MudGrid>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <FixItNow.Web.Components.Custom.Progress.CircularLoader Visible="@_isLoading" />
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="authRequest.Email"
+                                  For="@(() => authRequest.Email)"
+                                  Label="Email"
+                                  Immediate="true"
+                                  Required="true"
+                                  RequiredError="Email is required" />
+                </MudItem>
+            </MudGrid>
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="authRequest.Password"
+                                  For="@(() => authRequest.Password)"
+                                  Label="Password"
+                                  Immediate="true"
+                                  InputType="@_passwordInput"
+                                  Required="true"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@_passwordIcon"
+                                  OnAdornmentClick="OnShowHidePasswordClick"
+                                  OnKeyUp="OnPasswordKeyUp"
+                                  RequiredError="Password is required" />
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+        <MudCardActions>
+            <MudGrid>
+                <MudItem xs="12" Class="d-flex">
+                    <MudButton StartIcon="@Icons.Material.Filled.Login" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="Authenticate">
+                        @if (_isLoading)
+                        {
+                            <MudProgressCircular Color="Color.Default" Indeterminate="true" StrokeWidth="1" Size="Size.Small" />
+                        }
+                        else
+                        {
+                            <p>Sign In</p>
+                        }
+                    </MudButton>
+                </MudItem>
+                <MudItem xs="12" Class="d-flex">
+                    <MudDivider Class="mb-5" />
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-content-center pt-0">
+                    <MudText Typo="Typo.caption" Class="mx-auto">v@_appVersion</MudText>
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-content-center pt-0">
+                    <MudText Typo="Typo.caption" Class="mx-auto">© @DateTime.Now.Year - PT Kalbe Farma Tbk.</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudCardActions>
+    </MudCard>
+</MudForm>
+@if (_pageError != "")
+{
+    <div class="alert error mt-8 mb-0" style="color: red; font-weight: bold;">
+        @_pageError
+    </div>
+}
 
 @code {
-	private string email;
-	private string password;
-	private string message;
+    @inject IAuthenticationService _authService;
+    @inject NavigationManager NavigationManager;
+    @inject AuthenticationStateProvider _authStateProvider;
 
-	private async Task Log()
-	{
-		var response = await Http.PostAsJsonAsync("https://localhost:7008/api/auth/login", new
-		{
-			Email = email,
-			Password = password
-		});
-		if (response.IsSuccessStatusCode)
-		{
-			var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
-			await JS.InvokeVoidAsync("localStorage.setItem", "token", result.Token);
-			message = "Login successful!";
-		}
-		else
-		{
-			message = "Login failed.";
-		}
-	}
+    [CascadingParameter]
+    public HttpContext _httpcontext { get; set; } = default!;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string RedirectUrl { get; set; } = "/";
+
+    [Parameter]
+    public IMudDialogInstance MudDialog { get; set; } = null;
+
+    [Parameter]
+    public System.Timers.Timer SessionCheckerTimer { get; set; } = null;
+
+    LoginDto authRequest = new();
+    string _pageError = string.Empty;
+    bool _isLoading = false;
+    bool _isShowPassword = false;
+    InputType _passwordInput = InputType.Password;
+    string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+    string _appVersion = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _appVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+    }
+
+    void OnShowHidePasswordClick()
+    {
+        if (_isShowPassword)
+        {
+            _passwordIcon = Icons.Material.Filled.VisibilityOff;
+            _passwordInput = InputType.Password;
+        }
+        else
+        {
+            _passwordIcon = Icons.Material.Filled.Visibility;
+            _passwordInput = InputType.Text;
+        }
+        _isShowPassword = !_isShowPassword;
+    }
+
+    async Task OnPasswordKeyUp(KeyboardEventArgs args)
+    {
+        if (string.Equals(args?.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+        {
+            await Authenticate();
+        }
+    }
+
+    async Task Authenticate()
+    {
+        try
+        {
+            _isLoading = true;
+            StateHasChanged();
+
+            var response = await _authService.Login(authRequest);
+            await ((CustomAuthStateProvider)_authStateProvider).StartSession(response.Token);
+
+            if (MudDialog is null)
+            {
+                NavigationManager.NavigateTo(string.IsNullOrWhiteSpace(RedirectUrl) ? "/tickets" : RedirectUrl, true, true);
+            }
+            else
+            {
+                MudDialog.Close();
+                if (SessionCheckerTimer != null) SessionCheckerTimer.Start();
+            }
+        }
+        catch(Exception e)
+        {
+            _pageError = e.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
 }

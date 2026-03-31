@@ -1,20 +1,30 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="app.css" />
+    <link href="app.css" rel="stylesheet" />
     <link rel="stylesheet" href="FixItNow.Web.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
-
 <body>
     <Routes @rendermode="InteractiveServer" />
-    <script src="_framework/blazor.web.js"></script>
+    <script src="_framework/blazor.web.js" nonce="@nonce"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js?v=8.9.0" nonce="@nonce"></script>
 </body>
-
 </html>
+
+@code {
+    private string nonce;
+
+    protected override void OnInitialized()
+    {
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        var nonceBytes = new byte[32];
+        rng.GetBytes(nonceBytes);
+        nonce = Convert.ToBase64String(nonceBytes);
+    }
+}   

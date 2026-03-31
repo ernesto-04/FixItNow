@@ -1,5 +1,7 @@
 ﻿@page "/technicians"
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
+@attribute [Authorize]
 
 <h3>Technicians</h3>
 

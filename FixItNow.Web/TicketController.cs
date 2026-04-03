@@ -1,4 +1,5 @@
-﻿using FixItNow.Domain.Models;
+﻿using System.Security.Claims;
+using FixItNow.Domain.Models;
 using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.AspNetCore.Authorization;
@@ -10,12 +11,10 @@ namespace FixItNow.Web
     [ApiController]
     public class TicketController : ControllerBase
     {
-        private readonly FixItNowDataContext _context;
         private readonly TicketService _ticketService;
 
-        public TicketController(FixItNowDataContext context, TicketService ticketService)
+        public TicketController(TicketService ticketService)
         {
-            _context = context;
             _ticketService = ticketService;
         }
         [Authorize(Roles = "Admin, User")]
@@ -27,16 +26,32 @@ namespace FixItNow.Web
         }
         [Authorize(Roles = "Admin, Technician")]
         [HttpGet("get-tickets")]
-        public IActionResult GetAll()
+        public IActionResult GetAvailableTickets()
         {
-            var tickets = _ticketService.GetAllTickets();
+            var tickets = _ticketService.GetAvailableTickets();
             return Ok(tickets);
         }
-
-        [HttpPut("{id}/status")]
-        public IActionResult UpdateStatus(int id, TicketStatus status)
+        [Authorize(Roles = "Admin, Technician")]
+        [HttpPost("{ticketid}/accept")]
+        public IActionResult AcceptTicket(int ticketId)
         {
-            return Ok(_ticketService.UpdateStatus(id, status));
+            var technicianId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var success = _ticketService.AcceptTicket(ticketId, technicianId);
+            if (!success) return BadRequest("Ticket already taken");
+
+            return Ok();
+        }
+
+        [Authorize(Roles = "Admin, Technician")]
+        [HttpPatch("{ticketId}/status")]
+        public IActionResult UpdateStatus(int ticketId, [FromQuery] TicketStatus status)
+        {
+            var updated = _ticketService.UpdateStatus(ticketId, status);
+
+            if (updated == null)
+                return NotFound();
+
+            return Ok(updated);
         }
     }
 }

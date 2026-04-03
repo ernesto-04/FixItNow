@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FixItNow.Infrastructure.Migrations
 {
     [DbContext(typeof(FixItNowDataContext))]
-    [Migration("20260320103032_InitialCreate")]
+    [Migration("20260403091755_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,38 +25,6 @@ namespace FixItNow.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("FixItNow.Domain.Models.Accesses.Technician", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AssignedZone")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SkillTypes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Technicians");
-                });
-
             modelBuilder.Entity("FixItNow.Domain.Models.Accesses.User", b =>
                 {
                     b.Property<int>("Id")
@@ -67,19 +35,30 @@ namespace FixItNow.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("FixItNow.Domain.Models.Accesses.UserRole", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RoleName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("UserId", "RoleName");
+
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("FixItNow.Domain.Models.Ticket", b =>
@@ -95,10 +74,14 @@ namespace FixItNow.Infrastructure.Migrations
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -106,29 +89,62 @@ namespace FixItNow.Infrastructure.Migrations
 
                     b.Property<string>("Location")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedTechnicianId");
 
+                    b.HasIndex("CustomerId");
+
                     b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("FixItNow.Domain.Models.Accesses.UserRole", b =>
+                {
+                    b.HasOne("FixItNow.Domain.Models.Accesses.User", "User")
+                        .WithMany("Roles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FixItNow.Domain.Models.Ticket", b =>
                 {
-                    b.HasOne("FixItNow.Domain.Models.Accesses.Technician", "AssignedTechnician")
-                        .WithMany()
-                        .HasForeignKey("AssignedTechnicianId");
+                    b.HasOne("FixItNow.Domain.Models.Accesses.User", "AssignedTechnician")
+                        .WithMany("AssignedTickets")
+                        .HasForeignKey("AssignedTechnicianId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("FixItNow.Domain.Models.Accesses.User", "Customer")
+                        .WithMany("CreatedTickets")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("AssignedTechnician");
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("FixItNow.Domain.Models.Accesses.User", b =>
+                {
+                    b.Navigation("AssignedTickets");
+
+                    b.Navigation("CreatedTickets");
+
+                    b.Navigation("Roles");
                 });
 #pragma warning restore 612, 618
         }

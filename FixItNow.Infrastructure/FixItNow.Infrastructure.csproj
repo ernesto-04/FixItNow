@@ -23,4 +23,9 @@
     <ProjectReference Include="..\FixItNow.Domain\FixItNow.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+    <Folder Include="Models\Builders\Accesses\" />
+  </ItemGroup>
+
 </Project>

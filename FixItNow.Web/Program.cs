@@ -1,6 +1,5 @@
 using System.Text;
 using FixItNow.Infrastructure;
-using FixItNow.Infrastructure.Data;
 using FixItNow.Infrastructure.Models.Commons;
 using FixItNow.Web.Components;
 using FixItNow.Web.Services;
@@ -86,7 +85,6 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<FixItNowDataContext>();
-    Seeder.Seed(dbContext);
 }
 
 app.Run();

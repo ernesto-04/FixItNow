@@ -38,15 +38,22 @@ else
 					<strong>Status: @ticket.Status</strong>
 				</p>
 
-				<button disabled="@(ticket.Status == TicketStatus.InProgress || ticket.Status == TicketStatus.Completed)"
+				@if(ticket.Status == TicketStatus.Unassigned)
+				{
+					<MudButton Variant="Variant.Filled" @onclick="() => AcceptTicket(ticket.Id)">
+						Accept Ticket
+					</MudButton>
+				}
+
+				<MudButton Variant="Variant.Filled" disabled="@(ticket.Status != TicketStatus.Assigned)"
 						@onclick="() => UpdateStatus(ticket.Id, TicketStatus.InProgress)">
 					Start
-				</button>
+				</MudButton>
 
-				<button disabled="@(ticket.Status == TicketStatus.Completed)"
+				<MudButton Variant="Variant.Filled" disabled="@(ticket.Status != TicketStatus.InProgress)"
 						@onclick="() => UpdateStatus(ticket.Id, TicketStatus.Completed)">
 					Complete
-				</button>
+				</MudButton>
 			</li>
 		}
 	</ul>
@@ -55,21 +62,26 @@ else
 @code {
 	private List<Ticket> tickets;
 
-
 	protected override async Task OnInitializedAsync()
 	{
 		await LoadTickets();
 	}
 
-	private async Task LoadTickets()
+	private async Task<string> GetToken()
 	{
 		var token = await LocalStorage.GetAsync<string>("token");
-		if (!token.Success || string.IsNullOrEmpty(token.Value))
+		if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
+
+		return token.Value;
+
+	}
+
+	private async Task LoadTickets()
 	{
-			return;
-		}
+		var token = await GetToken();
+		if (token == null) return;
 		var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7008/api/tickets/get-tickets");
-		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Value);
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 		var response = await Http.SendAsync(request);
 		if (response.IsSuccessStatusCode)
 		{
@@ -77,10 +89,33 @@ else
 		}
 	}
 
+	private async Task AcceptTicket(int ticketId)
+	{
+		var token = await GetToken();
+		if (token == null) return;
+		var request = new HttpRequestMessage(HttpMethod.Post, $"https://localhost:7008/api/tickets/{ticketId}/accept");
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+		var response = await Http.SendAsync(request);
+
+		if (response.IsSuccessStatusCode)
+		{
+			await LoadTickets(); // refresh UI
+		}
+	}
+
 	private async Task UpdateStatus(int ticketId, TicketStatus newStatus)
 	{
+
+		var token = await GetToken();
+		if (token == null) return;
+
 		var statusString = newStatus.ToString();
-		await Http.PutAsync($"https://localhost:7008/api/tickets/{ticketId}/status?status={statusString}", null);
+		var request = new HttpRequestMessage(HttpMethod.Put,
+			$"https://localhost:7008/api/tickets/{ticketId}/status?status={statusString}");
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+		await Http.SendAsync(request);
+
 		await LoadTickets();
 	}
 
@@ -96,10 +131,9 @@ else
 	}
 	public enum TicketStatus
 	{
-		Pending,
+		Unassigned,
 		Assigned,
 		InProgress,
-		Completed,
-		Unassigned
+		Completed
 	}
 }

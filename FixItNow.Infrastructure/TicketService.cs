@@ -16,48 +16,16 @@ namespace FixItNow.Infrastructure
             _context = context;
         }
 
-        public Technician AssignTechnician(string category)
-        {
-            // 1. Find Technician with matching skill and available status
-            var candidates = _context.Technicians
-                .Where(t => t.SkillTypes == category && t.Status == "Available")
-                .ToList();
-            if (!candidates.Any()) return null;
-
-            // 2. Find the Technician with the least number of assigned tickets
-            var technician = candidates
-                .Select(t => new
-                {
-                    Technician = t,
-                    TicketCount = _context.Tickets.Count(ticket => ticket.AssignedTechnicianId == t.Id)
-                })
-                .OrderBy(t => t.TicketCount)
-                .First()
-                .Technician;
-
-            return technician;
-        }
-
         public CreateTicketResponse CreateTicket(Ticket ticket)
         {
-            var technician = AssignTechnician(ticket.Category);
-            if (technician != null)
-            {
-                ticket.AssignedTechnicianId = technician.Id;
-                ticket.Status = TicketStatus.Assigned;
-            }
-            else
-            {
-                ticket.Status = TicketStatus.Unassigned;
-            }
+            ticket.Status = TicketStatus.Unassigned;
+            ticket.AssignedTechnicianId = null;
             _context.Tickets.Add(ticket);
             _context.SaveChanges();
 
             return new CreateTicketResponse
             {
                 Id = ticket.Id,
-                AssignedTechnicianId = technician?.Id,
-                TechnicianName = technician?.Name
             };
         }
 
@@ -83,9 +51,39 @@ namespace FixItNow.Infrastructure
                     Status = t.Status,
                     Category = t.Category,
                     Location = t.Location,
-                    TechnicianName = t.AssignedTechnician != null ? t.AssignedTechnician.Name : "Not assigned"
                 })
                 .ToList();
+        }
+
+        public List<CreateTicketResponse> GetAvailableTickets()
+        {
+            return _context.Tickets
+                .Where(t => t.Status == TicketStatus.Unassigned)
+                .Select(t => new CreateTicketResponse
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = t.Status,
+                    Category = t.Category,
+                    Location = t.Location,
+                })
+                .ToList();
+            
+        }
+        
+        public bool AcceptTicket(int ticketId, int technicianId)
+        {
+            var ticket = _context.Tickets.Find(ticketId);
+
+            if (ticket == null) return false;
+
+            if(ticket.Status != TicketStatus.Unassigned) return false;
+
+            ticket.AssignedTechnicianId = technicianId;
+            ticket.Status = TicketStatus.Assigned;
+
+            _context.SaveChanges();
+            return true;
         }
     }
 }

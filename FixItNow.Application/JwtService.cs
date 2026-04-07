@@ -5,7 +5,7 @@ using FixItNow.Domain.Models.Accesses;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace FixItNow.Infrastructure
+namespace FixItNow.Application
 {
     public class JwtService
     {
@@ -21,11 +21,6 @@ namespace FixItNow.Infrastructure
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
             };
-
-            foreach (var role in user.Roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role.RoleName));
-            }   
 
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]));

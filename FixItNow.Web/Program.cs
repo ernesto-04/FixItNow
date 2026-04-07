@@ -1,5 +1,6 @@
 using System.Text;
-using FixItNow.Infrastructure;
+using FixItNow.Application;
+using FixItNow.Application.Services;
 using FixItNow.Infrastructure.Models.Commons;
 using FixItNow.Web.Components;
 using FixItNow.Web.Services;
@@ -44,6 +45,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 builder.Services.AddScoped<TicketService>();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<UserService>();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<ProtectedLocalStorage>();

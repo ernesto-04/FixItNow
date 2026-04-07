@@ -35,27 +35,57 @@ namespace FixItNow.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("FixItNow.Domain.Models.Accesses.UserRole", b =>
+            modelBuilder.Entity("FixItNow.Domain.Models.TechnicianProfile", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Skills")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("RoleName")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                    b.HasKey("Id");
 
-                    b.HasKey("UserId", "RoleName");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("TechnicianProfiles");
                 });
 
             modelBuilder.Entity("FixItNow.Domain.Models.Ticket", b =>
@@ -106,12 +136,12 @@ namespace FixItNow.Infrastructure.Migrations
                     b.ToTable("Tickets");
                 });
 
-            modelBuilder.Entity("FixItNow.Domain.Models.Accesses.UserRole", b =>
+            modelBuilder.Entity("FixItNow.Domain.Models.TechnicianProfile", b =>
                 {
                     b.HasOne("FixItNow.Domain.Models.Accesses.User", "User")
-                        .WithMany("Roles")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithOne("TechnicianProfile")
+                        .HasForeignKey("FixItNow.Domain.Models.TechnicianProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -127,7 +157,7 @@ namespace FixItNow.Infrastructure.Migrations
                     b.HasOne("FixItNow.Domain.Models.Accesses.User", "Customer")
                         .WithMany("CreatedTickets")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("AssignedTechnician");
@@ -141,7 +171,7 @@ namespace FixItNow.Infrastructure.Migrations
 
                     b.Navigation("CreatedTickets");
 
-                    b.Navigation("Roles");
+                    b.Navigation("TechnicianProfile");
                 });
 #pragma warning restore 612, 618
         }

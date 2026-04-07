@@ -1,8 +1,9 @@
-﻿using FixItNow.Domain.Models.Accesses;
-using FixItNow.Domain.Models.DTOs;
-using FixItNow.Infrastructure;
+﻿using FixItNow.Application;
+using FixItNow.Domain.Models.Accesses;
+using FixItNow.Domain.Models.Authentications;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Web
 {
@@ -20,28 +21,29 @@ namespace FixItNow.Web
         }
 
         [HttpPost("register")]
-        public IActionResult Register(RegisterDto dto)
+        public async Task Register(RegisterRequest request)
         {
+            // check username uniqueness
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == request.Username);
+
+            if (existingUser != null)
+                throw new Exception("Username already taken");
+
             var user = new User
             {
-                Email = dto.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                Role = "User"
+                FullName = request.FullName,
+                Username = request.Username,
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             };
 
             _context.Users.Add(user);
-            _context.SaveChanges();
-
-            return Ok(new
-            {
-                user.Id,
-                user.Email,
-                user.Role
-            });
+            await _context.SaveChangesAsync();
         }
 
         [HttpPost("login")]
-        public IActionResult Login(LoginDto dto)
+        public IActionResult Login(AuthRequest dto)
         {
             var user = _context.Users.FirstOrDefault(u => u.Email == dto.Email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
@@ -49,7 +51,7 @@ namespace FixItNow.Web
                 return Unauthorized();
             }
             var token = _jwtService.GenerateToken(user);
-            return Ok(new { Email = user.Email, Role = user.Role, Token = token });
+            return Ok(new { Email = user.Email, Token = token });
         }
     }
 }

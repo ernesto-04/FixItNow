@@ -1,6 +1,6 @@
-﻿namespace FixItNow.Domain.Models.DTOs
+﻿namespace FixItNow.Domain.Models.Authentications
 {
-    public class LoginDto
+    public class AuthRequest
     {
         public string Email { get; set; }
         public string Password { get; set; }

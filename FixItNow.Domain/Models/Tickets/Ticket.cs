@@ -1,6 +1,6 @@
 ﻿using FixItNow.Domain.Models.Accesses;
 
-namespace FixItNow.Domain.Models
+namespace FixItNow.Domain.Models.Tickets
 {
     public class Ticket
     {

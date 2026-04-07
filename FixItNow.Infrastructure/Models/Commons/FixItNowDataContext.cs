@@ -1,5 +1,5 @@
-﻿using FixItNow.Domain.Models;
-using FixItNow.Domain.Models.Accesses;
+﻿using FixItNow.Domain.Models.Accesses;
+using FixItNow.Domain.Models.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Infrastructure.Models.Commons
@@ -8,9 +8,9 @@ namespace FixItNow.Infrastructure.Models.Commons
     {
         public FixItNowDataContext(DbContextOptions<FixItNowDataContext> options) : base(options) { }
         public DbSet<User> Users { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
-        
+        public DbSet<TechnicianProfile> TechnicianProfiles { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -20,19 +20,13 @@ namespace FixItNow.Infrastructure.Models.Commons
                 entity.Property(u => u.Email)
                     .IsRequired()
                     .HasMaxLength(255);
+                entity.HasIndex(u => u.Email)
+                    .IsUnique();
                 entity.Property(u => u.PasswordHash)
                     .IsRequired();
-            });
-            modelBuilder.Entity<UserRole>(entity =>
-            {
-                entity.HasKey(ur => new { ur.UserId, ur.RoleName });
-                entity.Property(ur => ur.RoleName)
-                    .IsRequired()
-                    .HasMaxLength(50);
-                entity.HasOne(ur => ur.User)
-                    .WithMany(u => u.Roles)
-                    .HasForeignKey(ur => ur.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(u => u.TechnicianProfile)
+                    .WithOne(tp => tp.User)
+                    .HasForeignKey<TechnicianProfile>(tp => tp.UserId);
             });
             modelBuilder.Entity<Ticket>(entity =>
             {
@@ -55,11 +49,26 @@ namespace FixItNow.Infrastructure.Models.Commons
                 entity.HasOne(t => t.Customer)
                     .WithMany(u => u.CreatedTickets)
                     .HasForeignKey(t => t.CustomerId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(t => t.AssignedTechnician)
                     .WithMany(u => u.AssignedTickets)
                     .HasForeignKey(t => t.AssignedTechnicianId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+            modelBuilder.Entity<TechnicianProfile>(entity =>
+            {
+                entity.HasKey(tp => tp.Id);
+                entity.Property(tp => tp.Skills)
+                    .IsRequired();
+                entity.Property(tp => tp.Location)
+                    .IsRequired()
+                    .HasMaxLength(255);
+                entity.Property(tp => tp.Bio)
+                    .HasMaxLength(1000);
+                entity.HasOne(tp => tp.User)
+                    .WithOne(u => u.TechnicianProfile)
+                    .HasForeignKey<TechnicianProfile>(tp => tp.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

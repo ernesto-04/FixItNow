@@ -1,19 +1,25 @@
 ﻿@inherits LayoutComponentBase
 
-<Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
-    <Authorized>
-        <div class="page">
-            <div class="sidebar">
-                <NavMenu />
-            </div>
-    
-            <main>
-                <article class="content px-4">
+<MudThemeProvider Theme="ThemeHelper.Default"/>
+<MudPopoverProvider />
+<MudDialogProvider/>
+<MudSnackbarProvider />
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <article class="content px-4">
+            <AuthorizeView>
+                <Authorized>
                     @Body
-                </article>
-            </main>
-        </div>
-    </Authorized>
-    <NotAuthorized>
-    </NotAuthorized>
-</Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+                </Authorized>
+                <NotAuthorized>
+                    <p>Not authorized</p>
+                </NotAuthorized>
+            </AuthorizeView>
+        </article>
+    </main>
+</div>

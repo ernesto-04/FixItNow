@@ -11,11 +11,12 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="8.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.14" />
-    <PackageReference Include="MudBlazor" Version="9.2.0" />
+    <PackageReference Include="MudBlazor" Version="8.9.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FixItNow.Application\FixItNow.Application.csproj" />
     <ProjectReference Include="..\FixItNow.Domain\FixItNow.Domain.csproj" />
     <ProjectReference Include="..\FixItNow.Infrastructure\FixItNow.Infrastructure.csproj" />
   </ItemGroup>

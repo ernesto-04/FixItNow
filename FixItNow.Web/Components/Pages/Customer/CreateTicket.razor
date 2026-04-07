@@ -1,13 +1,4 @@
 ﻿@page "/create-ticket"
-@using FixItNow.Domain.Models
-@using FixItNow.Domain.Models.DTOs
-@using FixItNow.Infrastructure
-@using FixItNow.Infrastructure.Models
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
-@inject IHttpClientFactory HttpClientFactory
-@inject HttpClient Http
-@inject ProtectedLocalStorage LocalStorage
 
 <h3>CreateTicket</h3>
 
@@ -29,6 +20,10 @@
 }
 
 @code {
+    @inject IHttpClientFactory HttpClientFactory
+    @inject HttpClient Http
+    @inject ProtectedLocalStorage LocalStorage
+
     private Ticket ticket = new();
     private string message;
     private string assignedTechnician;

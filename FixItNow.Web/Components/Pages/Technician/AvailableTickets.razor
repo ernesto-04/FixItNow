@@ -1,10 +1,4 @@
-﻿@page "/tickets"
-@inject HttpClient Http
-@inject ProtectedLocalStorage LocalStorage
-@using FixItNow.Domain.Models
-@using FixItNow.Infrastructure
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+﻿@page "/available-tickets"
 
 
 <h3>Tickets</h3>
@@ -37,6 +31,7 @@ else
 				<p>
 					<strong>Status: @ticket.Status</strong>
 				</p>
+				<p><strong>ID:</strong> @ticket.Id</p>
 
 				@if(ticket.Status == TicketStatus.Unassigned)
 				{
@@ -44,27 +39,77 @@ else
 						Accept Ticket
 					</MudButton>
 				}
-
-				<MudButton Variant="Variant.Filled" disabled="@(ticket.Status != TicketStatus.Assigned)"
-						@onclick="() => UpdateStatus(ticket.Id, TicketStatus.InProgress)">
-					Start
-				</MudButton>
-
-				<MudButton Variant="Variant.Filled" disabled="@(ticket.Status != TicketStatus.InProgress)"
-						@onclick="() => UpdateStatus(ticket.Id, TicketStatus.Completed)">
-					Complete
-				</MudButton>
 			</li>
 		}
 	</ul>
+
+	<MudButton OnClick="HandleTechnicianAction">
+		@(_isTechnician ? "Go to Technician Dashboard" : "Become a Technician")
+	</MudButton>
 }
 
 @code {
+	@inject HttpClient Http
+	@inject ProtectedLocalStorage LocalStorage
+	@inject NavigationManager NavigationManager
+	@inject IDialogService DialogService
+
+	private bool _isTechnician = false;
+
 	private List<Ticket> tickets;
 
 	protected override async Task OnInitializedAsync()
 	{
 		await LoadTickets();
+		_isTechnician = await IsTechnician();
+	}
+
+	async Task HandleTechnicianAction()
+	{
+		if (_isTechnician)
+		{
+			// ✅ Already technician → go dashboard
+			NavigationManager.NavigateTo("/technician-dashboard");
+		}
+		else
+		{
+			// ❌ Not technician → open dialog
+			await OpenTechnicianDialog();
+		}
+	}
+
+	async Task OpenTechnicianDialog()
+	{
+		var dialog = await DialogService.ShowAsync<BecomeTechnicianDialog>("Become Technician");
+		var result = await dialog.Result;
+		if (!result.Canceled)
+		{
+			// 🔥 Refresh UI (user is now technician)
+			NavigationManager.NavigateTo("/technician/jobs", true);
+		}
+	}
+
+	private async Task<bool> IsTechnician()
+	{
+		var token = await GetToken();
+		if (token == null) return false;
+
+		var request = new HttpRequestMessage(
+			HttpMethod.Get,
+			"https://localhost:7008/api/users/is-technician"
+		);
+
+		request.Headers.Authorization =
+			new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+		var response = await Http.SendAsync(request);
+
+		if (response.IsSuccessStatusCode)
+		{
+			return await response.Content.ReadFromJsonAsync<bool>();
+		}
+
+		return false;
 	}
 
 	private async Task<string> GetToken()
@@ -80,7 +125,7 @@ else
 	{
 		var token = await GetToken();
 		if (token == null) return;
-		var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7008/api/tickets/get-tickets");
+		var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7008/api/tickets/available-tickets");
 		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 		var response = await Http.SendAsync(request);
 		if (response.IsSuccessStatusCode)

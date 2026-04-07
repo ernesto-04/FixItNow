@@ -1,9 +1,4 @@
 ﻿@page "/"
-@using FixItNow.Domain.Models.DTOs
-@using FixItNow.Infrastructure
-@using FixItNow.Web.Components.Layout
-@using FixItNow.Web.Services
-@using Microsoft.AspNetCore.Components.Authorization
 @layout LoginLayout
 
 <PageTitle>Login</PageTitle>
@@ -76,6 +71,12 @@
                 <MudItem xs="12" Class="d-flex justify-content-center pt-0">
                     <MudText Typo="Typo.caption" Class="mx-auto">© @DateTime.Now.Year - Ernesto Juan Faria</MudText>
                 </MudItem>
+                <MudItem xs="12" Class="d-flex justify-center mt-4">
+                    <MudText Typo="Typo.caption">
+                        No account yet?
+                        <MudLink Href="/register">Register</MudLink>
+                    </MudText>
+                </MudItem>
             </MudGrid>
         </MudCardActions>
     </MudCard>
@@ -105,7 +106,7 @@
     [Parameter]
     public System.Timers.Timer SessionCheckerTimer { get; set; } = null;
 
-    LoginDto authRequest = new();
+    AuthRequest authRequest = new();
     string _pageError = string.Empty;
     bool _isLoading = false;
     bool _isShowPassword = false;
@@ -153,7 +154,7 @@
 
             if (MudDialog is null)
             {
-                NavigationManager.NavigateTo(string.IsNullOrWhiteSpace(RedirectUrl) ? "/tickets" : RedirectUrl, true, true);
+                NavigationManager.NavigateTo(string.IsNullOrWhiteSpace(RedirectUrl) ? "/customer-tickets" : RedirectUrl, true, true);
             }
             else
             {

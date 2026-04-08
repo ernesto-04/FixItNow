@@ -2,9 +2,7 @@
 using FixItNow.Application.Services;
 using FixItNow.Domain.Models.DTOs;
 using FixItNow.Infrastructure.Models.Commons;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Web
 {

@@ -51,7 +51,7 @@ namespace FixItNow.Application.Services
                     Location = t.Location,
                 })
                 .ToList();
-            
+
         }
 
         public void AcceptTicket(int ticketId, int technicianUserId)

@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FixItNow.Domain.Models;
-using FixItNow.Domain.Models.Accesses;
+﻿using FixItNow.Domain.Models.Accesses;
 using FixItNow.Domain.Models.DTOs;
 using FixItNow.Infrastructure.Models.Commons;
-using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Application.Services
 {

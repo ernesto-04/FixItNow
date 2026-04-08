@@ -1,5 +1,4 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using FixItNow.Domain.Models.Authentications;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
@@ -25,7 +24,7 @@ namespace FixItNow.Application
         public async Task<AuthResponse> Login(AuthRequest model)
         {
             var response = await _http.PostAsJsonAsync("https://localhost:7008/api/auth/login", model);
-            if(!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
                 return null;
             }

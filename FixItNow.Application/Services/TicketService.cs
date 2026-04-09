@@ -13,7 +13,7 @@ namespace FixItNow.Application.Services
             _context = context;
         }
 
-        public CreateTicketResponse CreateTicket(int customerId, CreateTicketResponse request)
+        public async Task<CreateTicketResponse> CreateTicketAsync(int customerId, CreateTicketRequest request)
         {
             var ticket = new Ticket
             {
@@ -21,16 +21,14 @@ namespace FixItNow.Application.Services
                 Description = request.Description,
                 Category = request.Category,
                 Location = request.Location,
-
                 CustomerId = customerId,
-
                 Status = TicketStatus.Unassigned,
                 AssignedTechnicianId = null,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Tickets.Add(ticket);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return new CreateTicketResponse
             {
@@ -38,20 +36,21 @@ namespace FixItNow.Application.Services
             };
         }
 
-        public List<CreateTicketResponse> GetAvailableTickets()
+        public List<AvailableTicketResponse> GetAvailableTickets()
         {
             return _context.Tickets
                 .Where(t => t.Status == TicketStatus.Unassigned)
-                .Select(t => new CreateTicketResponse
+                .Select(t => new AvailableTicketResponse
                 {
                     Id = t.Id,
                     Title = t.Title,
                     Category = t.Category,
                     Description = t.Description,
                     Location = t.Location,
+                    TechnicianName = null,
+                    Status = t.Status
                 })
                 .ToList();
-
         }
 
         public void AcceptTicket(int ticketId, int technicianUserId)
@@ -79,7 +78,8 @@ namespace FixItNow.Application.Services
 
             _context.SaveChanges();
         }
-        public void UpdateStatus(int ticketId, int userId, string status)
+
+        public void UpdateStatus(int ticketId, int userId, TicketStatus newStatus)
         {
             var ticket = _context.Tickets
                 .FirstOrDefault(t => t.Id == ticketId);
@@ -87,15 +87,9 @@ namespace FixItNow.Application.Services
             if (ticket == null)
                 throw new Exception("Ticket not found");
 
-            // ✅ Only assigned technician can update
             if (ticket.AssignedTechnicianId != userId)
                 throw new Exception("You are not assigned to this ticket");
 
-            // ✅ Convert string → enum safely
-            if (!Enum.TryParse<TicketStatus>(status, out var newStatus))
-                throw new Exception("Invalid status");
-
-            // ✅ Enforce valid transitions
             switch (ticket.Status)
             {
                 case TicketStatus.Assigned:
@@ -110,13 +104,9 @@ namespace FixItNow.Application.Services
 
                 case TicketStatus.Completed:
                     throw new Exception("Ticket already completed");
-
-                default:
-                    throw new Exception("Invalid status transition");
             }
 
             ticket.Status = newStatus;
-
             _context.SaveChanges();
         }
     }

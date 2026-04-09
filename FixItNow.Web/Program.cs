@@ -3,18 +3,13 @@ using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Models.Commons;
 using FixItNow.Presentation;
 using FixItNow.Web.Components;
+using FixItNow.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-builder.Services.AddHttpClient();
-builder.Services.AddControllers();
-builder.Services.AddAuthorization();
-builder.Services.AddDistributedMemoryCache();
-
-builder.Services    
+builder.Services
+    .AddRequiredServices()
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
     .AddPresentation();

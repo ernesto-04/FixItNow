@@ -1,4 +1,5 @@
 ﻿@page "/available-tickets"
+@using FixItNow.Domain.Models.Tickets
 
 <h3>Tickets</h3>
 
@@ -55,12 +56,20 @@ else
 
 	private bool _isTechnician = false;
 
-	private List<Ticket> tickets;
+	private List<AvailableTicketResponse> tickets;
 
 	protected override async Task OnInitializedAsync()
 	{
-		await LoadTickets();
 		_isTechnician = await IsTechnician();
+		await LoadTickets();
+	}
+
+	private async Task<string> GetToken()
+	{
+		var token = await LocalStorage.GetAsync<string>("token");
+		if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
+
+		return token.Value;
 	}
 
 	async Task HandleTechnicianAction()
@@ -111,14 +120,6 @@ else
 		return false;
 	}
 
-	private async Task<string> GetToken()
-	{
-		var token = await LocalStorage.GetAsync<string>("token");
-		if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
-
-		return token.Value;
-
-	}
 
 	private async Task LoadTickets()
 	{
@@ -129,7 +130,7 @@ else
 		var response = await Http.SendAsync(request);
 		if (response.IsSuccessStatusCode)
 		{
-			tickets = await response.Content.ReadFromJsonAsync<List<Ticket>>();
+			tickets = await response.Content.ReadFromJsonAsync<List<AvailableTicketResponse>>();
 		}
 	}
 
@@ -144,7 +145,11 @@ else
 
 		if (response.IsSuccessStatusCode)
 		{
-			await LoadTickets(); // refresh UI
+			await LoadTickets();
+		}
+		else
+		{
+			Console.WriteLine("Failed to accept ticket");
 		}
 	}
 
@@ -161,23 +166,5 @@ else
 		await Http.SendAsync(request);
 
 		await LoadTickets();
-	}
-
-	public class Ticket
-	{
-		public int Id { get; set; }
-		public string Title { get; set; }
-		public string TechnicianName { get; set; }
-		public TicketStatus Status { get; set; }
-		public string Description { get; set; }
-		public string Category { get; set; }
-		public string Location { get; set; }
-	}
-	public enum TicketStatus
-	{
-		Unassigned,
-		Assigned,
-		InProgress,
-		Completed
 	}
 }

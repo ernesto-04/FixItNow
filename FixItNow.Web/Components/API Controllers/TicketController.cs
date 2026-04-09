@@ -1,8 +1,10 @@
 ﻿using System.Security.Claims;
 using FixItNow.Application.Services;
 using FixItNow.Domain.Models.DTOs;
+using FixItNow.Domain.Models.Tickets;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Web
 {
@@ -19,11 +21,16 @@ namespace FixItNow.Web
             _context = context;
         }
         [HttpPost("create-ticket")]
-        public IActionResult Create(CreateTicketResponse request)
+        public async Task<IActionResult> Create(CreateTicketRequest request)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
-            var createdTicket = _ticketService.CreateTicket(userId, request);
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            var userId = int.Parse(userIdClaim.Value);
+
+            var createdTicket = await _ticketService.CreateTicketAsync(userId, request);
 
             return Ok(createdTicket);
         }
@@ -49,15 +56,15 @@ namespace FixItNow.Web
 
             var jobs = _context.Tickets
                 .Where(t => t.AssignedTechnicianId == userId)
-                .Select(t => new
+                .Select(t => new TechnicianTicketResponse
                 {
-                    t.Id,
-                    t.Title,
-                    t.Description,
-                    t.Category,
-                    t.Location,
-                    t.Status,
-                    CustomerName = t.Customer.Email // or Name later
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Category = t.Category,
+                    Location = t.Location,
+                    Status = t.Status,
+                    CustomerName = t.Customer.Email
                 })
                 .ToList();
 
@@ -69,15 +76,16 @@ namespace FixItNow.Web
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var tickets = _context.Tickets
+                .Include(t => t.AssignedTechnician)
                 .Where(t => t.CustomerId == userId)
-                .Select(t => new
+                .Select(t => new CustomerTicketResponse
                 {
-                    t.Id,
-                    t.Title,
-                    t.Description,
-                    t.Category,
-                    t.Location,
-                    t.Status,
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Category = t.Category,
+                    Location = t.Location,
+                    Status = t.Status,
                     TechnicianName = t.AssignedTechnician != null
                         ? t.AssignedTechnician.Email
                         : "Not assigned"
@@ -86,14 +94,14 @@ namespace FixItNow.Web
 
             return Ok(tickets);
         }
-        [HttpPut("{id}/status")]
-        public IActionResult UpdateStatus(int id, [FromQuery] string status)
+        [HttpPut("{ticketId}/status")]
+        public IActionResult UpdateStatus(int ticketId, [FromQuery] TicketStatus status)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-            _ticketService.UpdateStatus(id, userId, status);
+            _ticketService.UpdateStatus(ticketId, userId, status);
 
-            return Ok(new { message = "Status updated successfully" });
+            return Ok();
         }
     }
 }

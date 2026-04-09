@@ -36,23 +36,29 @@ else
     @inject HttpClient Http
     @inject ProtectedLocalStorage LocalStorage
 
-    private List<MyTicketModel> tickets;
+    private List<CustomerTicketResponse> tickets;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadMyTickets();
+        await LoadTickets();
     }
 
     private async Task<string> GetToken()
     {
         var token = await LocalStorage.GetAsync<string>("token");
-        return token.Success ? token.Value : null;
+        if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
+
+        return token.Value;
     }
 
-    private async Task LoadMyTickets()
+    private async Task LoadTickets()
     {
         var token = await GetToken();
-        if (token == null) return;
+        if (token == null)
+        {
+            tickets = new List<CustomerTicketResponse>();
+            return;
+        }
 
         var request = new HttpRequestMessage(HttpMethod.Get,
             "https://localhost:7008/api/tickets/customer-tickets");
@@ -64,26 +70,7 @@ else
 
         if (response.IsSuccessStatusCode)
         {
-            tickets = await response.Content.ReadFromJsonAsync<List<MyTicketModel>>();
+            tickets = await response.Content.ReadFromJsonAsync<List<CustomerTicketResponse>>();
         }
-    }
-
-    public class MyTicketModel
-    {
-        public int Id { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public string Category { get; set; }
-        public string Location { get; set; }
-        public string TechnicianName { get; set; }
-        public TicketStatus Status { get; set; }
-    }
-
-    public enum TicketStatus
-    {
-        Unassigned,
-        Assigned,
-        InProgress,
-        Completed
     }
 }

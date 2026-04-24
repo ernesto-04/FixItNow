@@ -1,0 +1,65 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="ThemeHelper.Default" @bind-IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider FullWidth="true"
+                   BackdropClick="false" />
+<MudSnackbarProvider />
+
+<div class="login-outer">
+    <div class="login-middle">
+        <div class="login-inner">
+            @Body
+        </div>
+    </div>
+</div>
+
+@code {
+    @inject PersistentComponentState AppState
+    @inject ProtectedLocalStorage LocalStorage
+    @inject IJSRuntime JSRuntime
+
+    private PersistingComponentStateSubscription _persistingSubscription;
+    bool _isDarkMode = false;
+    string _darkModeStorageKey = "DarkModeState";
+
+    // TODO: Move this public static method to a helper class
+    public static bool IsPreRendering(IJSRuntime runtime)
+    {
+        // The peculiar thing in prerender is that Blazor circuit isn't yet created, so we can't use JSInterop
+        return !(bool)runtime.GetType().GetProperty("IsInitialized").GetValue(runtime);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _persistingSubscription = AppState.RegisterOnPersisting(() =>
+        {
+            AppState.PersistAsJson(_darkModeStorageKey, _isDarkMode);
+            return Task.CompletedTask;
+        });
+
+        if (!AppState.TryTakeFromJson<bool>(_darkModeStorageKey, out var isDarkMode))
+        {
+            if (IsPreRendering(JSRuntime))
+            {
+                // If prerendering, we cannot access LocalStorage, so we default to light mode
+                _isDarkMode = false;
+                return;
+            }
+
+            var storageResult = await LocalStorage.GetAsync<string>(_darkModeStorageKey);
+            if (storageResult.Success && bool.TryParse(storageResult.Value, out var isDarkModeStorage))
+            {
+                _isDarkMode = isDarkModeStorage;
+            }
+            else
+            {
+                _isDarkMode = false; // Default to light mode if no value is found
+            }
+        }
+        else
+        {
+            _isDarkMode = isDarkMode;
+        }
+    }
+}

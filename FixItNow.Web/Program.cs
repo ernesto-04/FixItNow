@@ -1,14 +1,18 @@
+using FixItNow.Application;
+using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Models.Commons;
+using FixItNow.Presentation;
 using FixItNow.Web.Components;
-using Microsoft.EntityFrameworkCore;
+using FixItNow.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-builder.Services.AddDbContext<FixItNowDataContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services
+    .AddRequiredServices()
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration)
+    .AddPresentation();
 
 var app = builder.Build();
 
@@ -21,11 +25,21 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapControllers();
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FixItNowDataContext>();
+}
 
 app.Run();

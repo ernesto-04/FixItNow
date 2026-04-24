@@ -1,0 +1,68 @@
+﻿@page "/create-ticket"
+
+<h3>CreateTicket</h3>
+
+<input placeholder="Title" @bind=ticket.Title/>
+<input placeholder="Description" @bind=ticket.Description/>
+<input placeholder="Category" @bind=ticket.Category/>
+<input placeholder="Location" @bind=ticket.Location/>
+
+<button @onclick="Create">Create</button>
+
+@if (message != null)
+{
+    <p>@message</p>
+}
+
+@if (assignedTechnician != null)
+{
+    <p><strong>Assigned Technician:</strong> @assignedTechnician</p>
+}
+
+@code {
+    @inject IHttpClientFactory HttpClientFactory
+    @inject HttpClient Http
+    @inject ProtectedLocalStorage LocalStorage
+
+    private CreateTicketRequest ticket = new();
+    private string message;
+    private string assignedTechnician;
+
+    private async Task<string> GetToken()
+    {
+        var token = await LocalStorage.GetAsync<string>("token");
+        if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
+
+        return token.Value;
+    }
+
+    private async Task Create()
+    {
+        var token = await GetToken();
+        if (token == null) return;  
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:7008/api/tickets/create-ticket");
+
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        request.Content = JsonContent.Create(new
+        {
+            Title = ticket.Title,
+            Description = ticket.Description,
+            Category = ticket.Category,
+            Location = ticket.Location
+        });
+
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<CreateTicketResponse>();
+            message = $"Ticket #{result?.Id} created successfully!";
+            ticket = new CreateTicketRequest();
+        }
+        else
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            message = $"Failed to create ticket: {error}";
+		}
+    }
+}

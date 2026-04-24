@@ -1,0 +1,170 @@
+﻿@page "/available-tickets"
+@using FixItNow.Domain.Models.Tickets
+
+<h3>Tickets</h3>
+
+@if (tickets == null)
+{
+	<p>Loading...</p>
+}
+else if (tickets.Count == 0)
+{
+	<p>No tickets found.</p>
+}
+else
+{
+	<ul>
+		@foreach (var ticket in tickets)
+		{
+			<li style="margin-bottom:20px; border:1px solid #ccc; padding:10px;">
+				<h4>@ticket.Title</h4>
+				<p>@ticket.Description</p>
+
+				<p><strong>Category:</strong> @ticket.Category</p>
+				<p><strong>Location:</strong> @ticket.Location</p>
+				
+				<p>
+					<strong>Technician:</strong>
+					@(ticket.TechnicianName ?? "Not assigned")
+				</p>
+				
+				<p>
+					<strong>Status: @ticket.Status</strong>
+				</p>
+				<p><strong>ID:</strong> @ticket.Id</p>
+
+				@if(ticket.Status == TicketStatus.Unassigned)
+				{
+					<MudButton Variant="Variant.Filled" @onclick="() => AcceptTicket(ticket.Id)">
+						Accept Ticket
+					</MudButton>
+				}
+			</li>
+		}
+	</ul>
+
+	<MudButton OnClick="HandleTechnicianAction">
+		@(_isTechnician ? "Go to Technician Dashboard" : "Become a Technician")
+	</MudButton>
+}
+
+@code {
+	@inject HttpClient Http
+	@inject ProtectedLocalStorage LocalStorage
+	@inject NavigationManager NavigationManager
+	@inject IDialogService DialogService
+
+	private bool _isTechnician = false;
+
+	private List<AvailableTicketResponse> tickets;
+
+	protected override async Task OnInitializedAsync()
+	{
+		_isTechnician = await IsTechnician();
+		await LoadTickets();
+	}
+
+	private async Task<string> GetToken()
+	{
+		var token = await LocalStorage.GetAsync<string>("token");
+		if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
+
+		return token.Value;
+	}
+
+	async Task HandleTechnicianAction()
+	{
+		if (_isTechnician)
+		{
+			// ✅ Already technician → go dashboard
+			NavigationManager.NavigateTo("/technician-dashboard");
+		}
+		else
+		{
+			// ❌ Not technician → open dialog
+			await OpenTechnicianDialog();
+		}
+	}
+
+	async Task OpenTechnicianDialog()
+	{
+		var dialog = await DialogService.ShowAsync<BecomeTechnicianDialog>("Become Technician");
+		var result = await dialog.Result;
+		if (!result.Canceled)
+		{
+			// 🔥 Refresh UI (user is now technician)
+			NavigationManager.NavigateTo("/technician/jobs", true);
+		}
+	}
+
+	private async Task<bool> IsTechnician()
+	{
+		var token = await GetToken();
+		if (token == null) return false;
+
+		var request = new HttpRequestMessage(
+			HttpMethod.Get,
+			"https://localhost:7008/api/users/is-technician"
+		);
+
+		request.Headers.Authorization =
+			new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+		var response = await Http.SendAsync(request);
+
+		if (response.IsSuccessStatusCode)
+		{
+			return await response.Content.ReadFromJsonAsync<bool>();
+		}
+
+		return false;
+	}
+
+
+	private async Task LoadTickets()
+	{
+		var token = await GetToken();
+		if (token == null) return;
+		var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7008/api/tickets/available-tickets");
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+		var response = await Http.SendAsync(request);
+		if (response.IsSuccessStatusCode)
+		{
+			tickets = await response.Content.ReadFromJsonAsync<List<AvailableTicketResponse>>();
+		}
+	}
+
+	private async Task AcceptTicket(int ticketId)
+	{
+		var token = await GetToken();
+		if (token == null) return;
+		var request = new HttpRequestMessage(HttpMethod.Post, $"https://localhost:7008/api/tickets/{ticketId}/accept");
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+		var response = await Http.SendAsync(request);
+
+		if (response.IsSuccessStatusCode)
+		{
+			await LoadTickets();
+		}
+		else
+		{
+			Console.WriteLine("Failed to accept ticket");
+		}
+	}
+
+	private async Task UpdateStatus(int ticketId, TicketStatus newStatus)
+	{
+
+		var token = await GetToken();
+		if (token == null) return;
+
+		var statusString = newStatus.ToString();
+		var request = new HttpRequestMessage(HttpMethod.Put,
+			$"https://localhost:7008/api/tickets/{ticketId}/status?status={statusString}");
+		request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+		await Http.SendAsync(request);
+
+		await LoadTickets();
+	}
+}

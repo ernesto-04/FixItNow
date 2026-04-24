@@ -1,0 +1,136 @@
+﻿@* @page "/technician-dashboard"
+@using FixItNow.Domain.Models
+@using FixItNow.Infrastructure
+@inject TicketService _ticketService
+
+<MudText Typo="Typo.h5" Class="mb-4">
+    Technician Dashboard
+</MudText>
+
+<MudTabs>
+
+    <!-- 🔥 AVAILABLE JOBS -->
+    <MudTabPanel Text="Available Jobs">
+
+        @if (_availableTickets == null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else if (!_availableTickets.Any())
+        {
+            <MudText>No jobs available</MudText>
+        }
+        else
+        {
+            <MudGrid>
+                @foreach (var ticket in _availableTickets)
+                {
+                    <MudItem xs="12" md="6">
+                        <MudCard Class="pa-4">
+
+                            <MudText Typo="Typo.h6">@ticket.Title</MudText>
+                            <MudText Typo="Typo.body2">@ticket.Category</MudText>
+                            <MudText Typo="Typo.caption">@ticket.Location</MudText>
+
+                            <MudButton Color="Color.Primary"
+                                       Variant="Variant.Filled"
+                                       Class="mt-3"
+                                       OnClick="() => Accept(ticket.Id)">
+                                Accept ticket
+                            </MudButton>
+
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+
+    </MudTabPanel>
+
+    <!-- 🔥 MY JOBS -->
+    <MudTabPanel Text="My Jobs">
+
+        @if (_myTickets == null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else if (!_myTickets.Any())
+        {
+            <MudText>No assigned jobs</MudText>
+        }
+        else
+        {
+            <MudGrid>
+                @foreach (var ticket in _myTickets)
+                {
+                    <MudItem xs="12" md="6">
+                        <MudCard Class="pa-4">
+
+                            <MudText Typo="Typo.h6">@ticket.Title</MudText>
+                            <MudChip T="string" Color="Color.Info">@ticket.Status</MudChip>
+
+                            <MudText Typo="Typo.caption">@ticket.Location</MudText>
+
+                            <MudStack Row="true" Spacing="2" Class="mt-3">
+
+                                @if (ticket.Status == TicketStatus.Assigned)
+                                {
+                                    <MudButton Color="Color.Warning"
+                                               OnClick="() => Start(ticket.Id)">
+                                        Start
+                                    </MudButton>
+                                }
+
+                                @if (ticket.Status == TicketStatus.InProgress)
+                                {
+                                    <MudButton Color="Color.Success"
+                                               OnClick="() => Complete(ticket.Id)">
+                                        Complete
+                                    </MudButton>
+                                }
+
+                            </MudStack>
+
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+
+    </MudTabPanel>
+
+</MudTabs>
+
+@code {
+    private List<TicketDto>? _availableTickets;
+    private List<TicketDto>? _myTickets;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    async Task LoadData()
+    {
+        _availableTickets = await _ticketService.GetAvailableTickets();
+        _myTickets = await _ticketService.GetMyTickets();
+    }
+
+    async Task Accept(int ticketId)
+    {
+        await _ticketService.AcceptTicket(ticketId);
+        await LoadData(); // 🔥 refresh
+    }
+
+    async Task Start(int ticketId)
+    {
+        await _ticketService.StartTicket(ticketId);
+        await LoadData();
+    }
+
+    async Task Complete(int ticketId)
+    {
+        await _ticketService.CompleteTicket(ticketId);
+        await LoadData();
+    }
+} *@

@@ -1,0 +1,175 @@
+﻿@page "/"
+@layout LoginLayout
+
+<PageTitle>Login</PageTitle>
+
+<MudForm Model="@authRequest">
+    <MudCard Elevation="3">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudGrid>
+                    <MudItem xs="12" Class="d-flex justify-center align-center">
+                        <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#46A583;color:white;border-radius:8px" class="mr-2">
+                            <MudIcon Icon="@Icons.Material.Rounded.Build" Size="Size.Medium"/>
+                        </div>
+                        <MudText Typo="Typo.h6">FixItNow</MudText>
+                    </MudItem>
+                    <MudItem xs="12" Class="d-flex">
+                        <MudText Typo="Typo.caption" Class="mx-auto">Maintenance & Repair Request System</MudText>
+                    </MudItem>
+                </MudGrid>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <FixItNow.Web.Components.Custom.Progress.CircularLoader Visible="@_isLoading" />
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="authRequest.Email"
+                                  For="@(() => authRequest.Email)"
+                                  Label="Email"
+                                  Immediate="true"
+                                  Required="true"
+                                  RequiredError="Email is required" />
+                </MudItem>
+            </MudGrid>
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="authRequest.Password"
+                                  For="@(() => authRequest.Password)"
+                                  Label="Password"
+                                  Immediate="true"
+                                  InputType="@_passwordInput"
+                                  Required="true"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@_passwordIcon"
+                                  OnAdornmentClick="OnShowHidePasswordClick"
+                                  OnKeyUp="OnPasswordKeyUp"
+                                  RequiredError="Password is required" />
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+        <MudCardActions>
+            <MudGrid>
+                <MudItem xs="12" Class="d-flex">
+                    <MudButton StartIcon="@Icons.Material.Filled.Login" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="Authenticate">
+                        @if (_isLoading)
+                        {
+                            <MudProgressCircular Color="Color.Default" Indeterminate="true" StrokeWidth="1" Size="Size.Small" />
+                        }
+                        else
+                        {
+                            <p>Sign In</p>
+                        }
+                    </MudButton>
+                </MudItem>
+                <MudItem xs="12" Class="d-flex">
+                    <MudDivider Class="mb-5" />
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-content-center pt-0">
+                    <MudText Typo="Typo.caption" Class="mx-auto">v@_appVersion</MudText>
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-content-center pt-0">
+                    <MudText Typo="Typo.caption" Class="mx-auto">© @DateTime.Now.Year - Ernesto Juan Faria</MudText>
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-center mt-4">
+                    <MudText Typo="Typo.caption">
+                        No account yet?
+                        <MudLink Href="/register">Register</MudLink>
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </MudCardActions>
+    </MudCard>
+</MudForm>
+@if (_pageError != "")
+{
+    <div class="alert error mt-8 mb-0" style="color: red; font-weight: bold;">
+        @_pageError
+    </div>
+}
+
+@code {
+    @inject IAuthenticationService _authService;
+    @inject NavigationManager NavigationManager;
+    @inject AuthenticationStateProvider _authStateProvider;
+
+    [CascadingParameter]
+    public HttpContext _httpcontext { get; set; } = default!;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string RedirectUrl { get; set; } = "/";
+
+    [Parameter]
+    public IMudDialogInstance MudDialog { get; set; } = null;
+
+    [Parameter]
+    public System.Timers.Timer SessionCheckerTimer { get; set; } = null;
+
+    AuthRequest authRequest = new();
+    string _pageError = string.Empty;
+    bool _isLoading = false;
+    bool _isShowPassword = false;
+    InputType _passwordInput = InputType.Password;
+    string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+    string _appVersion = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _appVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+    }
+
+    void OnShowHidePasswordClick()
+    {
+        if (_isShowPassword)
+        {
+            _passwordIcon = Icons.Material.Filled.VisibilityOff;
+            _passwordInput = InputType.Password;
+        }
+        else
+        {
+            _passwordIcon = Icons.Material.Filled.Visibility;
+            _passwordInput = InputType.Text;
+        }
+        _isShowPassword = !_isShowPassword;
+    }
+
+    async Task OnPasswordKeyUp(KeyboardEventArgs args)
+    {
+        if (string.Equals(args?.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+        {
+            await Authenticate();
+        }
+    }
+
+    async Task Authenticate()
+    {
+        try
+        {
+            _isLoading = true;
+            StateHasChanged();
+
+            var response = await _authService.Login(authRequest);
+            await ((CustomAuthStateProvider)_authStateProvider).StartSession(response.Token);
+
+            if (MudDialog is null)
+            {
+                NavigationManager.NavigateTo(string.IsNullOrWhiteSpace(RedirectUrl) ? "/customer-tickets" : RedirectUrl, true, true);
+            }
+            else
+            {
+                MudDialog.Close();
+                if (SessionCheckerTimer != null) SessionCheckerTimer.Start();
+            }
+        }
+        catch(Exception e)
+        {
+            _pageError = e.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

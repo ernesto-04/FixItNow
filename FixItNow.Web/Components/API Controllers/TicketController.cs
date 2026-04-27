@@ -21,6 +21,7 @@ namespace FixItNow.Web
             _context = context;
         }
         [HttpPost("create-ticket")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create(CreateTicketRequest request)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);

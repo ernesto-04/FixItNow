@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FixItNow.Domain.Models.Tickets;
+﻿using FixItNow.Domain.Models.Tickets;
+using Microsoft.AspNetCore.Http;
 
 namespace FixItNow.Domain.Models.DTOs
 {
@@ -16,5 +12,7 @@ namespace FixItNow.Domain.Models.DTOs
         public string Location { get; set; }
         public string CustomerName { get; set; }
         public TicketStatus Status { get; set; }
+        public List<IFormFile> Images { get; set; } = new();
+
     }
 }

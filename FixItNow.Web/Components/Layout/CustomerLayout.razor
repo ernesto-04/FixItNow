@@ -1,0 +1,25 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="ThemeHelper.Default"/>
+<MudPopoverProvider />
+<MudDialogProvider/>
+<MudSnackbarProvider />
+
+<div class="page">
+    <div class="sidebar">
+        <CustomerNavMenu />
+    </div>
+
+    <main>
+        <article class="content px-4">
+            <AuthorizeView>
+                <Authorized>
+                    @Body
+                </Authorized>
+                <NotAuthorized>
+                    <p>Not authorized</p>
+                </NotAuthorized>
+            </AuthorizeView>
+        </article>
+    </main>
+</div>

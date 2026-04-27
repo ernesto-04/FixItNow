@@ -30,6 +30,30 @@ namespace FixItNow.Application.Services
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync();
 
+            // ✅ Handle images (simple local storage for now)
+            if (request.Images != null && request.Images.Any())
+            {
+                var uploadPath = Path.Combine("wwwroot", "uploads");
+
+                if (!Directory.Exists(uploadPath))
+                    Directory.CreateDirectory(uploadPath);
+
+                foreach (var file in request.Images)
+                {
+                    var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                    var filePath = Path.Combine(uploadPath, fileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    // OPTIONAL: save to DB if you have TicketImages table
+                    // _context.TicketImages.Add(new TicketImage { TicketId = ticket.Id, Url = fileName });
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+
             return new CreateTicketResponse
             {
                 Id = ticket.Id

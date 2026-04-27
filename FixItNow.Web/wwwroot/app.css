@@ -216,3 +216,14 @@ h1:focus {
 .mud-table.data-list {
     width: 100%;
 }
+.content-wrapper {
+    padding: 16px;
+}
+
+/* Optional styling */
+.mud-drawer {
+    background: linear-gradient(180deg, #1b1b3a, #2d004d);
+}
+
+.mud-appbar {
+    background-color: #1e1e2f;

@@ -1,41 +1,104 @@
 ﻿@page "/customer-tickets"
+@layout CustomerLayout
 
-<h3>My Created Tickets</h3>
+@using FixItNow.Domain.Models.Tickets
+@using MudBlazor
 
-@if (tickets == null)
-{
-    <p>Loading...</p>
-}
-else if (tickets.Count == 0)
-{
-    <p>You haven’t created any tickets yet.</p>
-}
-else
-{
-    <ul>
-        @foreach (var ticket in tickets)
-        {
-            <li style="margin-bottom:20px; border:1px solid #ccc; padding:10px;">
-                <h4>@ticket.Title</h4>
-                <p>@ticket.Description</p>
+@inject HttpClient Http
+@inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager NavigationManager
 
-                <p><strong>Category:</strong> @ticket.Category</p>
-                <p><strong>Location:</strong> @ticket.Location</p>
-                <p><strong>Status:</strong> @ticket.Status</p>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
-                <p>
-                    <strong>Technician:</strong>
-                    @(ticket.TechnicianName ?? "Not assigned")
-                </p>
-            </li>
-        }
-    </ul>
-}
+    <MudText Typo="Typo.h5" GutterBottom="true">
+        My Service Requests
+    </MudText>
+
+    @if (tickets == null)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (tickets.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">
+            You haven’t created any tickets yet.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var ticket in tickets)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Class="rounded-xl">
+
+                        <!-- IMAGE -->
+                        @if (ticket.Images != null && ticket.Images.Any())
+                        {
+                            <MudCardMedia Image="@($"https://localhost:7008/uploads/{ticket.Images.First()}")"
+                                          Height="180" />
+                        }
+
+                        <MudCardContent>
+
+                            <MudText Typo="Typo.h6">
+                                @ticket.Title
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Class="mb-2 text-muted">
+                                @ticket.Description
+                            </MudText>
+
+                            <!-- CATEGORY -->
+                            <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined">
+                                @ticket.Category
+                            </MudChip>
+
+                            <!-- STATUS -->
+                            <MudChip T="CustomerTicketResponse" Class="ml-2"
+                                     Color="@GetStatusColor(ticket.Status)">
+                                @ticket.Status
+                            </MudChip>
+
+                            <MudDivider Class="my-2" />
+
+                            <!-- LOCATION -->
+                            <MudText Typo="Typo.caption">
+                                Location: @ticket.Location
+                            </MudText>
+
+                            <br />
+
+                            <!-- TECHNICIAN -->
+                            <MudText Typo="Typo.caption">
+                                Technician: @(ticket.TechnicianName ?? "Not assigned")
+                            </MudText>
+
+                        </MudCardContent>
+
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Text"
+                                       OnClick="@(() => ViewDetails(ticket.Id))">
+                                View
+                            </MudButton>
+
+                            @if (ticket.Status == TicketStatus.Assigned || ticket.Status == TicketStatus.InProgress)
+                            {
+                                <MudButton Variant="Variant.Text" Color="Color.Success">
+                                    Chat
+                                </MudButton>
+                            }
+                        </MudCardActions>
+
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+
+</MudContainer>
 
 @code {
-    @inject HttpClient Http
-    @inject ProtectedLocalStorage LocalStorage
-
     private List<CustomerTicketResponse> tickets;
 
     protected override async Task OnInitializedAsync()
@@ -46,9 +109,7 @@ else
     private async Task<string> GetToken()
     {
         var token = await LocalStorage.GetAsync<string>("token");
-        if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
-
-        return token.Value;
+        return token.Success ? token.Value : null;
     }
 
     private async Task LoadTickets()
@@ -56,7 +117,7 @@ else
         var token = await GetToken();
         if (token == null)
         {
-            tickets = new List<CustomerTicketResponse>();
+            tickets = new();
             return;
         }
 
@@ -70,7 +131,25 @@ else
 
         if (response.IsSuccessStatusCode)
         {
-            tickets = await response.Content.ReadFromJsonAsync<List<CustomerTicketResponse>>();
+            tickets = await response.Content
+                .ReadFromJsonAsync<List<CustomerTicketResponse>>();
         }
+    }
+
+    private Color GetStatusColor(TicketStatus status)
+    {
+        return status switch
+        {
+            TicketStatus.Unassigned => Color.Default,
+            TicketStatus.Assigned => Color.Info,
+            TicketStatus.InProgress => Color.Warning,
+            TicketStatus.Completed => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    private void ViewDetails(int id)
+    {
+        NavigationManager.NavigateTo($"/ticket/{id}");
     }
 }

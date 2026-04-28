@@ -1,10 +1,22 @@
-﻿using FixItNow.Domain.Models.DTOs;
+﻿using FixItNow.Domain.Models.Accesses;
+using FixItNow.Domain.Models.DTOs;
 using FixItNow.Domain.Models.Tickets;
 using FixItNow.Infrastructure.Models.Commons;
+using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Application.Services
 {
-    public class TicketService
+    public interface ITicketService
+    {
+        Task<CreateTicketResponse> CreateTicketAsync(int customerId, CreateTicketRequest request);
+        List<AvailableTicketResponse> GetAvailableTickets(int userId);
+        List<CustomerTicketResponse> GetCustomerTickets(int userId);
+        List<TechnicianTicketResponse> GetTechnicianTickets(int userId);
+        void AcceptTicket(int ticketId, int technicianUserId);
+        void UpdateStatus(int ticketId, int userId, TicketStatus newStatus);
+    }
+
+    public class TicketService : ITicketService
     {
         private readonly FixItNowDataContext _context;
 
@@ -60,10 +72,13 @@ namespace FixItNow.Application.Services
             };
         }
 
-        public List<AvailableTicketResponse> GetAvailableTickets()
+        public List<AvailableTicketResponse> GetAvailableTickets(int currentUserId)
         {
             return _context.Tickets
-                .Where(t => t.Status == TicketStatus.Unassigned)
+                .Where(t =>
+            t.Status == TicketStatus.Unassigned
+            && t.CustomerId != currentUserId
+        )
                 .Select(t => new AvailableTicketResponse
                 {
                     Id = t.Id,
@@ -73,6 +88,43 @@ namespace FixItNow.Application.Services
                     Location = t.Location,
                     TechnicianName = null,
                     Status = t.Status
+                })
+                .ToList();
+        }
+
+        public List<CustomerTicketResponse> GetCustomerTickets(int userId)
+        {
+            return _context.Tickets
+                .Include(t => t.AssignedTechnician)
+                .Where(t => t.CustomerId == userId)
+                .Select(t => new CustomerTicketResponse
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Category = t.Category,
+                    Location = t.Location,
+                    Status = t.Status,
+                    TechnicianName = t.AssignedTechnician != null
+                        ? t.AssignedTechnician.Email
+                        : "Not assigned"
+                })
+                .ToList();
+        }
+
+        public List<TechnicianTicketResponse> GetTechnicianTickets(int userId)
+        {
+            return _context.Tickets
+                .Where(t => t.AssignedTechnicianId == userId)
+                .Select(t => new TechnicianTicketResponse
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Category = t.Category,
+                    Location = t.Location,
+                    Status = t.Status,
+                    CustomerName = t.Customer.Email
                 })
                 .ToList();
         }

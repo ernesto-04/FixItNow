@@ -7,7 +7,12 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace FixItNow.Application
 {
-    public class JwtService
+    public interface IJwtService
+    {
+        string GenerateToken(User user);
+    }
+
+    public class JwtService : IJwtService
     {
         private readonly IConfiguration _configuration;
         public JwtService(IConfiguration configuration)

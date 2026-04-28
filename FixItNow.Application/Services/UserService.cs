@@ -4,7 +4,12 @@ using FixItNow.Infrastructure.Models.Commons;
 
 namespace FixItNow.Application.Services
 {
-    public class UserService
+    public interface IUserService
+    {
+        void BecomeTechnician(int userId, CreateTechnicianProfileRequest request);
+    }
+
+    public class UserService : IUserService
     {
         private readonly FixItNowDataContext _context;
 

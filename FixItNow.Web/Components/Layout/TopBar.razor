@@ -1,0 +1,24 @@
+﻿<MudAppBar Elevation="1" Color="Color.Primary">
+
+    <!-- Back Button -->
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                   Color="Color.Inherit"
+                   Edge="Edge.Start"
+                   OnClick="OnBackClicked" />
+    <MudSpacer />
+
+</MudAppBar>
+
+@code {
+    @inject NavigationManager Nav
+
+    [Parameter] public EventCallback OnBack { get; set; }
+
+    private async Task OnBackClicked()
+    {
+        if (OnBack.HasDelegate)
+            await OnBack.InvokeAsync();
+        else
+            Nav.NavigateTo("/");
+    }
+}

@@ -146,20 +146,25 @@
         "General"
     };
 
-    private List<IBrowserFile> selectedFiles = new();
+    private List<(byte[] Data, string Name, string ContentType)> files = new();
     private List<string> imagePreviews = new();
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
-        selectedFiles = e.GetMultipleFiles().ToList();
+        files.Clear();
         imagePreviews.Clear();
 
-        foreach (var file in selectedFiles)
+        foreach (var file in e.GetMultipleFiles())
         {
-            var buffer = new byte[file.Size];
-            await file.OpenReadStream().ReadAsync(buffer);
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
 
-            var base64 = Convert.ToBase64String(buffer);
+            await stream.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+
+            files.Add((bytes, file.Name, file.ContentType));
+
+            var base64 = Convert.ToBase64String(bytes);
             imagePreviews.Add($"data:{file.ContentType};base64,{base64}");
         }
     }
@@ -196,10 +201,13 @@
         content.Add(new StringContent(ticket.Category ?? ""), "Category");
         content.Add(new StringContent(ticket.Location ?? ""), "Location");
 
-        foreach (var file in selectedFiles)
+        foreach (var file in files)
         {
-            var stream = file.OpenReadStream();
-            content.Add(new StreamContent(stream), "Images", file.Name);
+            content.Add(
+                new ByteArrayContent(file.Data),
+                "Images",
+                file.Name
+            );
         }
 
         request.Content = content;

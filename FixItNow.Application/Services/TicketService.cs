@@ -1,5 +1,4 @@
-﻿using FixItNow.Domain.Models.Accesses;
-using FixItNow.Domain.Models.DTOs;
+﻿using FixItNow.Domain.Models.DTOs;
 using FixItNow.Domain.Models.Tickets;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +23,15 @@ namespace FixItNow.Application.Services
         {
             _context = context;
         }
+
+        private static readonly Dictionary<TicketStatus, List<TicketStatus>> _validTransitions =
+        new()
+        {
+            { TicketStatus.Unassigned, new() { TicketStatus.Assigned } },
+            { TicketStatus.Assigned, new() { TicketStatus.InProgress } },
+            { TicketStatus.InProgress, new() { TicketStatus.Completed } },
+            { TicketStatus.Completed, new() { } }
+        };
 
         public async Task<CreateTicketResponse> CreateTicketAsync(int customerId, CreateTicketRequest request)
         {
@@ -166,20 +174,12 @@ namespace FixItNow.Application.Services
             if (ticket.AssignedTechnicianId != userId)
                 throw new Exception("You are not assigned to this ticket");
 
-            switch (ticket.Status)
+            var currentStatus = ticket.Status;
+
+            if (!_validTransitions.ContainsKey(currentStatus) ||
+                !_validTransitions[currentStatus].Contains(newStatus))
             {
-                case TicketStatus.Assigned:
-                    if (newStatus != TicketStatus.InProgress)
-                        throw new Exception("Can only move to InProgress");
-                    break;
-
-                case TicketStatus.InProgress:
-                    if (newStatus != TicketStatus.Completed)
-                        throw new Exception("Can only move to Completed");
-                    break;
-
-                case TicketStatus.Completed:
-                    throw new Exception("Ticket already completed");
+                throw new Exception($"Invalid status transition: {currentStatus} → {newStatus}");
             }
 
             ticket.Status = newStatus;

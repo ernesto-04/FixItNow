@@ -25,6 +25,7 @@ namespace FixItNow.Application
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.Username)
             };
 
             var jwtSettings = _configuration.GetSection("JwtSettings");

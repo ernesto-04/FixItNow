@@ -12,7 +12,7 @@ namespace FixItNow.Domain.Models.DTOs
         public string Location { get; set; }
         public string CustomerName { get; set; }
         public TicketStatus Status { get; set; }
-        public List<IFormFile> Images { get; set; } = new();
+        public List<string> ImageUrls { get; set; }
 
     }
 }

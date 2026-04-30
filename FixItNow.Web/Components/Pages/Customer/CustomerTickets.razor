@@ -7,6 +7,7 @@
 @inject HttpClient Http
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager NavigationManager
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
@@ -32,11 +33,12 @@
                 <MudItem xs="12" sm="6" md="4">
                     <MudCard Class="rounded-xl">
 
-                        <!-- IMAGE -->
-                        @if (ticket.Images != null && ticket.Images.Any())
+                        @if (ticket.ImageUrls != null && ticket.ImageUrls.Any())
                         {
-                            <MudCardMedia Image="@($"https://localhost:7008/uploads/{ticket.Images.First()}")"
-                                          Height="180" />
+                            <div style="position:relative;">
+                                <MudImage Src="@ticket.ImageUrls.First()"
+                                          Style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:10px; cursor:pointer;"/>
+                            </div>
                         }
 
                         <MudCardContent>
@@ -151,5 +153,22 @@
     private void ViewDetails(int id)
     {
         NavigationManager.NavigateTo($"/ticket/{id}");
+    }
+
+    private void OpenImageViewer(List<string> images, int startIndex)
+    {
+        var parameters = new DialogParameters
+    {
+        { "Images", images },
+        { "StartIndex", startIndex }
+    };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.ExtraLarge,
+            FullWidth = true,
+            CloseButton = true
+        };
+
     }
 }

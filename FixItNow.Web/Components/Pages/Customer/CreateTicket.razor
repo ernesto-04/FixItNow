@@ -46,13 +46,42 @@
         {
             <MudText Typo="Typo.subtitle1">Upload photos (optional)</MudText>
 
-            <InputFile OnChange="HandleFileSelected" multiple />
+            <label for="fileInput" style="width:100%">
+                <MudPaper Class="pa-6 d-flex flex-column align-center justify-center upload-box">
+
+                    <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" />
+
+                    <MudText Typo="Typo.subtitle2">
+                        Click to upload photos
+                    </MudText>
+
+                    <MudText Typo="Typo.caption">
+                        Max 5 images • 10MB each
+                    </MudText>
+
+                </MudPaper>
+            </label>
+
+            <InputFile id="fileInput"
+                       OnChange="HandleFileSelected"
+                       multiple
+                       hidden />
 
             <MudGrid Class="mt-3">
-                @foreach (var img in imagePreviews)
+                @foreach (var img in imagePreviews.Select((value, index) => new { value, index }))
                 {
                     <MudItem xs="4">
-                        <MudImage Src="@img" Class="rounded-lg" />
+                        <MudPaper Class="pa-1 position-relative preview-box">
+
+                            <MudImage Src="@img.value" Class="preview-img" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Class="remove-btn"
+                                           OnClick="() => RemoveImage(img.index)" />
+
+                        </MudPaper>
                     </MudItem>
                 }
             </MudGrid>
@@ -149,14 +178,22 @@
     private List<(byte[] Data, string Name, string ContentType)> files = new();
     private List<string> imagePreviews = new();
 
+    private const int MaxFiles = 5;
+    private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
+
+    private InputFile fileInput;
+
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
-        files.Clear();
-        imagePreviews.Clear();
-
-        foreach (var file in e.GetMultipleFiles())
+        foreach (var file in e.GetMultipleFiles(MaxFiles - files.Count))
         {
-            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            if (files.Count >= MaxFiles)
+                break;
+
+            if (file.Size > MaxFileSize)
+                continue;
+
+            using var stream = file.OpenReadStream(MaxFileSize);
             using var ms = new MemoryStream();
 
             await stream.CopyToAsync(ms);
@@ -183,6 +220,15 @@
     {
         var token = await LocalStorage.GetAsync<string>("token");
         return token.Success ? token.Value : null;
+    }
+
+    private void RemoveImage(int index)
+    {
+        if (index >= 0 && index < files.Count)
+        {
+            files.RemoveAt(index);
+            imagePreviews.RemoveAt(index);
+        }
     }
 
     private async Task Create()

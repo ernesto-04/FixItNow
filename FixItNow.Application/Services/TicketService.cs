@@ -1,7 +1,10 @@
-﻿using FixItNow.Domain.Models.DTOs;
+﻿using System;
+using FixItNow.Domain.Models.DTOs;
 using FixItNow.Domain.Models.Tickets;
 using FixItNow.Infrastructure.Models.Commons;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace FixItNow.Application.Services
 {
@@ -18,10 +21,14 @@ namespace FixItNow.Application.Services
     public class TicketService : ITicketService
     {
         private readonly FixItNowDataContext _context;
+        private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _config;
 
-        public TicketService(FixItNowDataContext context)
+        public TicketService(FixItNowDataContext context, IWebHostEnvironment env, IConfiguration config)
         {
             _context = context;
+            _env = env;
+            _config = config;
         }
 
         private static readonly Dictionary<TicketStatus, List<TicketStatus>> _validTransitions =
@@ -44,35 +51,40 @@ namespace FixItNow.Application.Services
                 CustomerId = customerId,
                 Status = TicketStatus.Unassigned,
                 AssignedTechnicianId = null,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Images = new List<TicketImage>()
             };
 
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync();
 
-            // ✅ Handle images (simple local storage for now)
+            // ✅ Handle images
             if (request.Images != null && request.Images.Any())
             {
-                var uploadPath = Path.Combine("wwwroot", "uploads");
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "tickets");
 
-                if (!Directory.Exists(uploadPath))
-                    Directory.CreateDirectory(uploadPath);
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
 
                 foreach (var file in request.Images)
                 {
-                    var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-                    var filePath = Path.Combine(uploadPath, fileName);
+                    var extension = Path.GetExtension(file.FileName);
+                    var fileName = $"{Guid.NewGuid()}{extension}";
+                    var filePath = Path.Combine(uploadsFolder, fileName);
 
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await file.CopyToAsync(stream);
 
-                    // OPTIONAL: save to DB if you have TicketImages table
-                    // _context.TicketImages.Add(new TicketImage { TicketId = ticket.Id, Url = fileName });
+                    // ✅ Save to DB
+                    ticket.Images.Add(new TicketImage
+                    {
+                        TicketId = ticket.Id,
+                        ImageUrl = $"/uploads/tickets/{fileName}"
+                    });
                 }
 
                 await _context.SaveChangesAsync();
             }
-
 
             return new CreateTicketResponse
             {
@@ -82,7 +94,9 @@ namespace FixItNow.Application.Services
 
         public List<AvailableTicketResponse> GetAvailableTickets(int currentUserId)
         {
+            var baseUrl = _config["AppSettings:BaseUrl"];
             return _context.Tickets
+                .Include(t => t.Images)
                 .Where(t =>
             t.Status == TicketStatus.Unassigned
             && t.CustomerId != currentUserId
@@ -95,15 +109,20 @@ namespace FixItNow.Application.Services
                     Description = t.Description,
                     Location = t.Location,
                     TechnicianName = null,
-                    Status = t.Status
+                    Status = t.Status,
+                    ImageUrls = t.Images
+                        .Select(i => $"{baseUrl}{i.ImageUrl}")
+                        .ToList()
                 })
                 .ToList();
         }
 
         public List<CustomerTicketResponse> GetCustomerTickets(int userId)
         {
+            var baseUrl = _config["AppSettings:BaseUrl"];
             return _context.Tickets
                 .Include(t => t.AssignedTechnician)
+                .Include(t => t.Images)
                 .Where(t => t.CustomerId == userId)
                 .Select(t => new CustomerTicketResponse
                 {
@@ -115,14 +134,20 @@ namespace FixItNow.Application.Services
                     Status = t.Status,
                     TechnicianName = t.AssignedTechnician != null
                         ? t.AssignedTechnician.Email
-                        : "Not assigned"
+                        : "Not assigned",
+                    ImageUrls = t.Images
+                        .Select(i => $"{baseUrl}{i.ImageUrl}")
+                        .ToList()
                 })
                 .ToList();
         }
 
         public List<TechnicianTicketResponse> GetTechnicianTickets(int userId)
         {
+            var baseUrl = _config["AppSettings:BaseUrl"];
             return _context.Tickets
+                .Include(t => t.Customer)
+                .Include(t => t.Images)
                 .Where(t => t.AssignedTechnicianId == userId)
                 .Select(t => new TechnicianTicketResponse
                 {
@@ -132,7 +157,10 @@ namespace FixItNow.Application.Services
                     Category = t.Category,
                     Location = t.Location,
                     Status = t.Status,
-                    CustomerName = t.Customer.Email
+                    CustomerName = t.Customer.Email,
+                    ImageUrls = t.Images
+                        .Select(i => $"{baseUrl}{i.ImageUrl}")
+                        .ToList()
                 })
                 .ToList();
         }

@@ -10,8 +10,6 @@ The system enables customers to create service requests, while technicians can b
 
 ## 🧠 Problem Statement
 
-# 🧠 Slide 2 — Problem Statement
-
 In Indonesia, finding reliable technicians (e.g., for home repairs or maintenance) is often difficult.
 
 Most people rely on:

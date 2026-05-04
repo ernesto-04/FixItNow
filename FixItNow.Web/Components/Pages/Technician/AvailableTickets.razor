@@ -40,10 +40,16 @@
                     <MudCard Class="rounded-xl">
 
                         <!-- IMAGE -->
-                        @if (ticket.Images != null && ticket.Images.Any())
+                        @if (ticket.ImageUrls != null && ticket.ImageUrls.Any())
                         {
-                            <MudCardMedia Image="@($"https://localhost:7008/uploads/{ticket.Images.First()}")"
-                                          Height="160" />
+                            <MudGrid>
+                                @foreach (var img in ticket.ImageUrls)
+                                {
+                                    <MudItem xs="4">
+                                        <MudImage Src="@img" Class="rounded-lg" />
+                                    </MudItem>
+                                }
+                            </MudGrid>
                         }
 
                         <MudCardContent>

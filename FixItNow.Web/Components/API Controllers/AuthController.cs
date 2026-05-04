@@ -12,9 +12,9 @@ namespace FixItNow.Web
     public class AuthController : ControllerBase
     {
         private readonly FixItNowDataContext _context;
-        private readonly JwtService _jwtService;
+        private readonly IJwtService _jwtService;
 
-        public AuthController(FixItNowDataContext context, JwtService jwtService)
+        public AuthController(FixItNowDataContext context, IJwtService jwtService)
         {
             _context = context;
             _jwtService = jwtService;

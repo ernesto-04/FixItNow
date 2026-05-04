@@ -1,0 +1,43 @@
+﻿<MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+    <ActivatorContent>
+        <MudAvatar Color="Color.Inherit">
+            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" />
+        </MudAvatar>
+    </ActivatorContent>
+
+    <ChildContent>
+        <MudMenuItem Disabled="true">
+            <MudText Typo="Typo.subtitle2">@UserName</MudText>
+        </MudMenuItem>
+
+        <MudDivider />
+
+        <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                     OnClick="OnLogoutClicked">
+            Logout
+        </MudMenuItem>
+    </ChildContent>
+</MudMenu>
+
+@code {
+    @inject NavigationManager Nav
+    @inject AuthenticationStateProvider AuthProvider
+
+	[Parameter] public string UserName { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await ((CustomAuthStateProvider)AuthProvider).GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            UserName = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "User";
+        }
+    }
+
+    private void OnLogoutClicked()
+    {
+        ((CustomAuthStateProvider)AuthProvider).EndSession();
+        Nav.NavigateTo("/", true);
+    }
+}

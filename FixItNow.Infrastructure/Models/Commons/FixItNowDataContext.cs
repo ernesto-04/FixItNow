@@ -10,6 +10,7 @@ namespace FixItNow.Infrastructure.Models.Commons
         public DbSet<User> Users { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TechnicianProfile> TechnicianProfiles { get; set; }
+        public DbSet<TicketImage> TicketImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,6 +55,22 @@ namespace FixItNow.Infrastructure.Models.Commons
                     .WithMany(u => u.AssignedTickets)
                     .HasForeignKey(t => t.AssignedTechnicianId)
                     .OnDelete(DeleteBehavior.SetNull);
+                entity.HasMany(t => t.Images)
+                    .WithOne(i => i.Ticket)
+                    .HasForeignKey(i => i.TicketId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<TicketImage>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+
+                entity.Property(i => i.ImageUrl)
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.HasOne(i => i.Ticket)
+                    .WithMany(t => t.Images)
+                    .HasForeignKey(i => i.TicketId);
             });
             modelBuilder.Entity<TechnicianProfile>(entity =>
             {

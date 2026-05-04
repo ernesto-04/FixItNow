@@ -7,7 +7,12 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace FixItNow.Application
 {
-    public class JwtService
+    public interface IJwtService
+    {
+        string GenerateToken(User user);
+    }
+
+    public class JwtService : IJwtService
     {
         private readonly IConfiguration _configuration;
         public JwtService(IConfiguration configuration)
@@ -20,6 +25,7 @@ namespace FixItNow.Application
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.Username)
             };
 
             var jwtSettings = _configuration.GetSection("JwtSettings");

@@ -4,7 +4,6 @@ using FixItNow.Domain.Models.DTOs;
 using FixItNow.Domain.Models.Tickets;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FixItNow.Web
 {
@@ -12,10 +11,10 @@ namespace FixItNow.Web
     [ApiController]
     public class TicketController : ControllerBase
     {
-        private readonly TicketService _ticketService;
+        private readonly ITicketService _ticketService;
         private readonly FixItNowDataContext _context;
 
-        public TicketController(TicketService ticketService, FixItNowDataContext context)
+        public TicketController(ITicketService ticketService, FixItNowDataContext context)
         {
             _ticketService = ticketService;
             _context = context;
@@ -38,7 +37,15 @@ namespace FixItNow.Web
         [HttpGet("available-tickets")]
         public IActionResult GetAvailableTickets()
         {
-            var tickets = _ticketService.GetAvailableTickets();
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            int currentUserId = int.Parse(userIdClaim);
+
+            var tickets = _ticketService.GetAvailableTickets(currentUserId);
+
             return Ok(tickets);
         }
         [HttpPost("{id}/accept")]
@@ -53,21 +60,12 @@ namespace FixItNow.Web
         [HttpGet("technician-tickets")]
         public IActionResult GetTechnicianTickets()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            var jobs = _context.Tickets
-                .Where(t => t.AssignedTechnicianId == userId)
-                .Select(t => new TechnicianTicketResponse
-                {
-                    Id = t.Id,
-                    Title = t.Title,
-                    Description = t.Description,
-                    Category = t.Category,
-                    Location = t.Location,
-                    Status = t.Status,
-                    CustomerName = t.Customer.Email
-                })
-                .ToList();
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var jobs = _ticketService.GetTechnicianTickets(userId);
 
             return Ok(jobs);
         }
@@ -76,22 +74,7 @@ namespace FixItNow.Web
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-            var tickets = _context.Tickets
-                .Include(t => t.AssignedTechnician)
-                .Where(t => t.CustomerId == userId)
-                .Select(t => new CustomerTicketResponse
-                {
-                    Id = t.Id,
-                    Title = t.Title,
-                    Description = t.Description,
-                    Category = t.Category,
-                    Location = t.Location,
-                    Status = t.Status,
-                    TechnicianName = t.AssignedTechnician != null
-                        ? t.AssignedTechnician.Email
-                        : "Not assigned"
-                })
-                .ToList();
+            var tickets = _ticketService.GetCustomerTickets(userId);
 
             return Ok(tickets);
         }

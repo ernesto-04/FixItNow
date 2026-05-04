@@ -19,6 +19,8 @@ namespace FixItNow.Domain.Models.Tickets
 
         public int? AssignedTechnicianId { get; set; }
         public User? AssignedTechnician { get; set; }
+
+        public List<TicketImage> Images { get; set; }
     }
 
     public enum TicketStatus

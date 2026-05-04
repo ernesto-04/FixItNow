@@ -10,9 +10,9 @@ namespace FixItNow.Web
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private readonly FixItNowDataContext _context;
-        public UserController(UserService userService, FixItNowDataContext context)
+        public UserController(IUserService userService, FixItNowDataContext context)
         {
             _userService = userService;
             _context = context;

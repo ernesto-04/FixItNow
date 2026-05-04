@@ -6,9 +6,9 @@ namespace FixItNow.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
-            services.AddScoped<TicketService>();
-            services.AddScoped<UserService>();
-            services.AddScoped<JwtService>();
+            services.AddScoped<ITicketService, TicketService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IJwtService, JwtService>();
             return services;
         }
     }

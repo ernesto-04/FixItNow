@@ -1,5 +1,4 @@
-﻿@using FixItNow.Web.Components.Pages.Technician
-<div class="top-row ps-3 navbar navbar-dark">
+﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">FixItNow</a>
     </div>
@@ -19,78 +18,5 @@
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Customer Tickets
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <MudButton OnClick="HandleTechnicianAction" Color="Color.Success">
-                @(_isTechnician ? "Switch to Technician" : "Become a Technician")
-            </MudButton>
-        </div>     
     </nav>
 </div>
-
-@code{
-    @inject ProtectedLocalStorage LocalStorage
-    @inject NavigationManager NavigationManager
-    @inject HttpClient Http
-    @inject IDialogService DialogService
-
-    private bool _isTechnician = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        _isTechnician = await IsTechnician();
-    }
-    async Task HandleTechnicianAction()
-    {
-        if (_isTechnician)
-        {
-            // ✅ Already technician → go dashboard
-            await LocalStorage.SetAsync("mode", "technician");
-            NavigationManager.NavigateTo("/available-tickets", false);
-        }
-        else
-        {
-            // ❌ Not technician → open dialog
-            await OpenTechnicianDialog();
-        }
-    }
-    private async Task<bool> IsTechnician()
-    {
-        var token = await GetToken();
-        if (token == null) return false;
-
-        var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            "https://localhost:7008/api/users/is-technician"
-        );
-
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var response = await Http.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
-        {
-            return await response.Content.ReadFromJsonAsync<bool>();
-        }
-
-        return false;
-    }
-    async Task OpenTechnicianDialog()
-    {
-        var dialog = await DialogService.ShowAsync<BecomeTechnicianDialog>("Become Technician");
-        var result = await dialog.Result;
-        if (!result.Canceled)
-        {
-            // 🔥 Refresh UI (user is now technician)
-            NavigationManager.NavigateTo("/technician/jobs", true);
-        }
-    }
-    private async Task<string> GetToken()
-    {
-        var token = await LocalStorage.GetAsync<string>("token");
-        if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
-
-        return token.Value;
-    }
-
-}

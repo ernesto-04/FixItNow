@@ -1,17 +1,50 @@
-﻿@inherits LayoutComponentBase
+﻿@using FixItNow.Web.Components.Custom.Profile
+@using FixItNow.Web.Components.Pages.Technician
+@inherits LayoutComponentBase
 
-<MudThemeProvider Theme="ThemeHelper.Default"/>
+<MudThemeProvider Theme="ThemeHelper.Default" />
 <MudPopoverProvider />
-<MudDialogProvider/>
+<MudDialogProvider />
 <MudSnackbarProvider />
 
-<div class="page">
-    <div class="sidebar">
-        <CustomerNavMenu />
-    </div>
+<MudLayout>
 
-    <main>
+    <!-- 🔝 TOP BAR -->
+    <MudAppBar Elevation="1" Color="Color.Primary">
+
+        <!-- ✅ Toggle Drawer Button -->
+        <MudIconButton Icon="@(_drawerOpen? Icons.Material.Filled.ArrowBack : Icons.Material.Filled.Menu)"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
+
+        <MudSpacer />
+
+        <MudButton OnClick="HandleTechnicianAction"
+                   Color="Color.Success"
+                   Variant="Variant.Filled"
+                   Class="mr-2">
+            Become a Technician
+        </MudButton>
+
+        <!-- 👤 Profile -->
+        <Profile />
+
+    </MudAppBar>
+
+    <!-- 📂 DRAWER (Sidebar) -->
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="DrawerVariant.Responsive"
+               Elevation="1">
+
+        <CustomerNavMenu />
+
+    </MudDrawer>
+
+    <!-- 📄 MAIN CONTENT -->
+    <MudMainContent>
         <article class="content px-4">
+
             <AuthorizeView>
                 <Authorized>
                     @Body
@@ -20,6 +53,85 @@
                     <p>Not authorized</p>
                 </NotAuthorized>
             </AuthorizeView>
+
         </article>
-    </main>
-</div>
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    @inject ProtectedLocalStorage LocalStorage
+    @inject NavigationManager NavigationManager
+    @inject HttpClient Http
+    @inject IDialogService DialogService
+
+    private bool _drawerOpen = true;
+    private bool _isTechnician = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isTechnician = await IsTechnician();
+            StateHasChanged();
+        }
+    }
+    private async Task HandleTechnicianAction()
+    {
+        if (_isTechnician)
+        {
+            // ✅ Already technician → go dashboard
+            await LocalStorage.SetAsync("mode", "technician");
+            NavigationManager.NavigateTo("/available-tickets", false);
+        }
+        else
+        {
+            // ❌ Not technician → open dialog
+            await OpenTechnicianDialog();
+        }
+    }
+    private async Task<bool> IsTechnician()
+    {
+        var token = await GetToken();
+        if (token == null) return false;
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "https://localhost:7008/api/users/is-technician"
+        );
+
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<bool>();
+        }
+
+        return false;
+    }
+    private async Task OpenTechnicianDialog()
+    {
+        var dialog = await DialogService.ShowAsync<BecomeTechnicianDialog>("Become Technician");
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            // 🔥 Refresh UI (user is now technician)
+            NavigationManager.NavigateTo("/technician/jobs", true);
+        }
+    }
+    private async Task<string> GetToken()
+    {
+        var token = await LocalStorage.GetAsync<string>("token");
+        if (!token.Success || string.IsNullOrEmpty(token.Value)) return null;
+
+        return token.Value;
+    }
+
+    void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

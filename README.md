@@ -10,13 +10,28 @@ The system enables customers to create service requests, while technicians can b
 
 ## 🧠 Problem Statement
 
-Many service-based workflows (e.g., repairs, maintenance) lack a centralized system to manage requests, assignments, and progress tracking.
+# 🧠 Slide 2 — Problem Statement
 
-FixItNow addresses this by providing:
+In Indonesia, finding reliable technicians (e.g., for home repairs or maintenance) is often difficult.
 
-* A structured ticket lifecycle
-* Role-based interactions (Customer & Technician)
-* Real-time status updates
+Most people rely on:
+
+* Personal recommendations from friends or family
+* Informal networks with limited availability
+* Unverified service providers
+
+This leads to:
+
+* Delays in getting help
+* Lack of transparency in service quality
+* Inefficient communication between customers and technicians
+
+There is a need for a centralized platform to:
+
+* Connect customers with available technicians
+* Standardize the service request process
+* Improve visibility and tracking of tasks
+
 
 ---
 

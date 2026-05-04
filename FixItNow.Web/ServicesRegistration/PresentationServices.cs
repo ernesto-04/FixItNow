@@ -13,8 +13,10 @@ namespace FixItNow.Presentation
             services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
             services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<ProtectedLocalStorage>();
+            services.AddScoped<AppState>();
 
             services.AddMudServices();
+            
 
             return services;
         }

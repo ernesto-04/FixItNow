@@ -1,0 +1,143 @@
+﻿@using FixItNow.Web.Components.Pages.Technician
+@inherits LayoutComponentBase
+
+@inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject IDialogService DialogService
+@inject AppState AppState
+
+<MudThemeProvider Theme="ThemeHelper.Default" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+
+    <!-- 🔝 TOP BAR -->
+    <MudAppBar Elevation="1" Color="Color.Primary">
+
+        <MudIconButton Icon="@(_drawerOpen ? Icons.Material.Filled.ArrowBack : Icons.Material.Filled.Menu)"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
+
+        <MudSpacer />
+
+        <MudButton OnClick="HandleSwitch"
+                   Color="Color.Success"
+                   Variant="Variant.Filled"
+                   Class="mr-2">
+
+            @(AppState.Mode == "technician"
+                ? "Switch to Customer"
+                : "Become a Technician")
+
+        </MudButton>
+
+    </MudAppBar>
+
+    <!-- 📂 Drawer -->
+    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive">
+        <NavMenu />
+    </MudDrawer>
+
+    <!-- 📄 Content -->
+    <MudMainContent>
+        <article class="content px-4">
+            <AuthorizeView>
+                <Authorized>
+                    @Body
+                </Authorized>
+                <NotAuthorized>
+                    <p>Not authorized</p>
+                </NotAuthorized>
+            </AuthorizeView>
+        </article>
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isTechnician;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // 🔥 Restore mode from LocalStorage
+        var result = await LocalStorage.GetAsync<string>("mode");
+        if (result.Success && !string.IsNullOrEmpty(result.Value))
+        {
+            AppState.SetMode(result.Value);
+        }
+
+        _isTechnician = await IsTechnician();
+
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private async Task HandleSwitch()
+    {
+        if (AppState.Mode == "technician")
+        {
+            // 👉 Switch to customer
+            AppState.SetMode("customer");
+            await LocalStorage.SetAsync("mode", "customer");
+
+            NavigationManager.NavigateTo("/customer-tickets");
+        }
+        else
+        {
+            if (_isTechnician)
+            {
+                // 👉 Switch to technician
+                AppState.SetMode("technician");
+                await LocalStorage.SetAsync("mode", "technician");
+
+                NavigationManager.NavigateTo("/available-tickets");
+            }
+            else
+            {
+                // 👉 Not a technician → open dialog
+                var dialog = await DialogService.ShowAsync<BecomeTechnicianDialog>("Become Technician");
+                var result = await dialog.Result;
+
+                if (!result.Canceled)
+                {
+                    AppState.SetMode("technician");
+                    await LocalStorage.SetAsync("mode", "technician");
+
+                    NavigationManager.NavigateTo("/available-tickets");
+                }
+            }
+        }
+    }
+
+    private async Task<bool> IsTechnician()
+    {
+        var token = await LocalStorage.GetAsync<string>("token");
+        if (!token.Success) return false;
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "https://localhost:7008/api/users/is-technician");
+
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Value);
+
+        var response = await Http.SendAsync(request);
+
+        return response.IsSuccessStatusCode &&
+               await response.Content.ReadFromJsonAsync<bool>();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

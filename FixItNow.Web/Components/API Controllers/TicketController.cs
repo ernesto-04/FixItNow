@@ -78,7 +78,7 @@ namespace FixItNow.Web
 
             return Ok(tickets);
         }
-        [HttpPut("{ticketId}/status")]
+        [HttpPut("{ticketId:int}/status")]
         public IActionResult UpdateStatus(int ticketId, [FromQuery] TicketStatus status)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -86,6 +86,51 @@ namespace FixItNow.Web
             _ticketService.UpdateStatus(ticketId, userId, status);
 
             return Ok();
+        }
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetTicketById(int id)
+        {
+            var userId = GetUserId();
+
+            var ticket = await _ticketService.GetTicketByIdAsync(id, userId);
+
+            if (ticket == null)
+                return NotFound();
+
+            return Ok(ticket);
+        }
+        [HttpGet("{id:int}/technician")]
+        public async Task<IActionResult> GetTicketForTechnician(int id)
+        {
+            var userId = GetUserId();
+
+            var ticket = await _ticketService.GetTicketForTechnicianAsync(id, userId);
+
+            if (ticket == null)
+                return NotFound();
+
+            return Ok(ticket);
+        }
+        [HttpGet("{id:int}/technician-detail")]
+        public async Task<IActionResult> GetTechnicianTicketDetail(int id)
+        {
+            var userId = GetUserId();
+
+            var ticket = await _ticketService.GetTechnicianTicketDetailAsync(id, userId);
+
+            if (ticket == null)
+                return NotFound();
+
+            return Ok(ticket);
+        }
+        private int GetUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(claim, out var userId))
+                throw new UnauthorizedAccessException();
+
+            return userId;
         }
     }
 }

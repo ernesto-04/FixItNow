@@ -30,24 +30,28 @@
             @foreach (var ticket in tickets)
             {
                 <MudItem xs="12" sm="6" md="4">
-                    <MudCard Class="rounded-xl">
 
+                    <MudCard Class="rounded-xl hover-card"
+                             Style="cursor:pointer;"
+                             @onclick="@(() => ViewDetails(ticket.Id))">
+
+                        <!-- IMAGE -->
                         @if (ticket.ImageUrls != null && ticket.ImageUrls.Any())
                         {
-                            <div style="position:relative;">
-                                <MudImage Src="@ticket.ImageUrls.First()"
-                                          Style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:10px; cursor:pointer;"/>
-                            </div>
+                            <MudImage Src="@ticket.ImageUrls.First()"
+                                      Style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:12px 12px 0 0;" />
                         }
 
                         <MudCardContent>
 
+                            <!-- TITLE -->
                             <MudText Typo="Typo.h6">
                                 @ticket.Title
                             </MudText>
 
+                            <!-- DESCRIPTION -->
                             <MudText Typo="Typo.body2" Class="mb-2 text-muted">
-                                @ticket.Description
+                                @Shorten(ticket.Description)
                             </MudText>
 
                             <!-- CATEGORY -->
@@ -56,7 +60,7 @@
                             </MudChip>
 
                             <!-- STATUS -->
-                            <MudChip T="CustomerTicketResponse" Class="ml-2"
+                            <MudChip T="string" Class="ml-2"
                                      Color="@GetStatusColor(ticket.Status)">
                                 @ticket.Status
                             </MudChip>
@@ -65,33 +69,33 @@
 
                             <!-- LOCATION -->
                             <MudText Typo="Typo.caption">
-                                Location: @ticket.Location
+                                📍 @ticket.Location
                             </MudText>
 
                             <br />
 
                             <!-- TECHNICIAN -->
                             <MudText Typo="Typo.caption">
-                                Technician: @(ticket.TechnicianName ?? "Not assigned")
+                                👨‍🔧 @(ticket.TechnicianName ?? "Not assigned")
                             </MudText>
 
                         </MudCardContent>
 
                         <MudCardActions>
-                            <MudButton Variant="Variant.Text"
-                                       OnClick="@(() => ViewDetails(ticket.Id))">
-                                View
-                            </MudButton>
 
                             @if (ticket.Status == TicketStatus.Assigned || ticket.Status == TicketStatus.InProgress)
                             {
-                                <MudButton Variant="Variant.Text" Color="Color.Success">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Success"
+                                           @onclick="@(() => OpenChat(ticket.Id))">
                                     Chat
                                 </MudButton>
                             }
+
                         </MudCardActions>
 
                     </MudCard>
+
                 </MudItem>
             }
         </MudGrid>
@@ -137,6 +141,22 @@
         }
     }
 
+    private void ViewDetails(int id)
+    {
+        NavigationManager.NavigateTo($"/ticket/{id}");
+    }
+
+    private void OpenChat(int ticketId)
+    {
+        NavigationManager.NavigateTo($"/chat/{ticketId}");
+    }
+
+    private string Shorten(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        return text.Length > 80 ? text.Substring(0, 80) + "..." : text;
+    }
+
     private Color GetStatusColor(TicketStatus status)
     {
         return status switch
@@ -147,27 +167,5 @@
             TicketStatus.Completed => Color.Success,
             _ => Color.Default
         };
-    }
-
-    private void ViewDetails(int id)
-    {
-        NavigationManager.NavigateTo($"/ticket/{id}");
-    }
-
-    private void OpenImageViewer(List<string> images, int startIndex)
-    {
-        var parameters = new DialogParameters
-    {
-        { "Images", images },
-        { "StartIndex", startIndex }
-    };
-
-        var options = new DialogOptions
-        {
-            MaxWidth = MaxWidth.ExtraLarge,
-            FullWidth = true,
-            CloseButton = true
-        };
-
     }
 }

@@ -14,5 +14,7 @@ namespace FixItNow.Domain.Models.DTOs
         public TicketStatus Status { get; set; }
 
         public List<string> ImageUrls { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

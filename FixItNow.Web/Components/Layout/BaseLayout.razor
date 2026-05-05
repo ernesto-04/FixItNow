@@ -1,4 +1,5 @@
-﻿@using FixItNow.Web.Components.Pages.Technician
+﻿@using FixItNow.Web.Components.Custom.Profile
+@using FixItNow.Web.Components.Pages.Technician
 @inherits LayoutComponentBase
 
 @inject ProtectedLocalStorage LocalStorage
@@ -35,6 +36,8 @@
 
         </MudButton>
 
+        <Profile/>
+
     </MudAppBar>
 
     <!-- 📂 Drawer -->
@@ -62,18 +65,33 @@
     private bool _drawerOpen = true;
     private bool _isTechnician;
 
+    private bool _initialized = false;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // 🔥 Restore mode from LocalStorage
-        var result = await LocalStorage.GetAsync<string>("mode");
-        if (result.Success && !string.IsNullOrEmpty(result.Value))
+        if (!_initialized)
         {
-            AppState.SetMode(result.Value);
+            _initialized = true;
+
+            var result = await LocalStorage.GetAsync<string>("mode");
+
+            if (result.Success && !string.IsNullOrEmpty(result.Value))
+            {
+                AppState.SetMode(result.Value);
+            }
+            else
+            {
+                // ✅ DEFAULT → Customer
+                AppState.SetMode("customer");
+                await LocalStorage.SetAsync("mode", "customer");
+            }
+
+            _isTechnician = await IsTechnician();
+
+            AppState.OnChange += StateHasChanged;
+
+            StateHasChanged();
         }
-
-        _isTechnician = await IsTechnician();
-
-        AppState.OnChange += StateHasChanged;
     }
 
     private void ToggleDrawer()

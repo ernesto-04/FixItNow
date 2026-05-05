@@ -13,6 +13,9 @@ namespace FixItNow.Domain.Models.DTOs
         public string TechnicianName { get; set; }
         public string CustomerName { get; set; }
         public TicketStatus Status { get; set; }
+
         public List<string> ImageUrls { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

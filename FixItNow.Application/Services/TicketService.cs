@@ -16,6 +16,9 @@ namespace FixItNow.Application.Services
         List<TechnicianTicketResponse> GetTechnicianTickets(int userId);
         void AcceptTicket(int ticketId, int technicianUserId);
         void UpdateStatus(int ticketId, int userId, TicketStatus newStatus);
+        Task<CustomerTicketResponse?> GetTicketByIdAsync(int ticketId, int userId);
+        Task<AvailableTicketResponse?> GetTicketForTechnicianAsync(int ticketId, int userId);
+        Task<TechnicianTicketResponse?> GetTechnicianTicketDetailAsync(int ticketId, int userId);
     }
 
     public class TicketService : ITicketService
@@ -212,6 +215,80 @@ namespace FixItNow.Application.Services
 
             ticket.Status = newStatus;
             _context.SaveChanges();
+        }
+
+        public async Task<CustomerTicketResponse?> GetTicketByIdAsync(int ticketId, int userId)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.Images)
+                .Include(t => t.AssignedTechnician)
+                .FirstOrDefaultAsync(t => t.Id == ticketId && t.CustomerId == userId);
+
+            if (ticket == null)
+                return null;
+
+            return new CustomerTicketResponse
+            {
+                Id = ticket.Id,
+                Title = ticket.Title,
+                Description = ticket.Description,
+                Category = ticket.Category,
+                Location = ticket.Location,
+                Status = ticket.Status,
+                CreatedAt = ticket.CreatedAt,
+                TechnicianName = ticket.AssignedTechnician != null
+                    ? ticket.AssignedTechnician.Username
+                    : null,
+                ImageUrls = ticket.Images.Select(i => i.ImageUrl).ToList()
+            };
+        }
+        public async Task<AvailableTicketResponse?> GetTicketForTechnicianAsync(int ticketId, int userId)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.Images)
+                .Include(t => t.Customer)
+                .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+            if (ticket == null)
+                return null;
+
+            return new AvailableTicketResponse
+            {
+                Id = ticket.Id,
+                Title = ticket.Title,
+                Description = ticket.Description,
+                Category = ticket.Category,
+                Location = ticket.Location,
+                Status = ticket.Status,
+                CreatedAt = ticket.CreatedAt,
+                CustomerName = ticket.Customer.Username,
+                ImageUrls = ticket.Images.Select(i => i.ImageUrl).ToList()
+            };
+        }
+        public async Task<TechnicianTicketResponse?> GetTechnicianTicketDetailAsync(int ticketId, int userId)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.Images)
+                .Include(t => t.Customer)
+                .FirstOrDefaultAsync(t =>
+                    t.Id == ticketId &&
+                    t.AssignedTechnicianId == userId);
+
+            if (ticket == null)
+                return null;
+
+            return new TechnicianTicketResponse
+            {
+                Id = ticket.Id,
+                Title = ticket.Title,
+                Description = ticket.Description,
+                Category = ticket.Category,
+                Location = ticket.Location,
+                Status = ticket.Status,
+                CreatedAt = ticket.CreatedAt,
+                CustomerName = ticket.Customer.Username,
+                ImageUrls = ticket.Images.Select(i => i.ImageUrl).ToList()
+            };
         }
     }
 }

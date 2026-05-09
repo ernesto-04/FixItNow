@@ -1,4 +1,5 @@
-﻿using FixItNow.Domain.Models.Accesses;
+﻿using FixItNow.Domain.Models;
+using FixItNow.Domain.Models.Accesses;
 using FixItNow.Domain.Models.Tickets;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,7 @@ namespace FixItNow.Infrastructure.Models.Commons
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TechnicianProfile> TechnicianProfiles { get; set; }
         public DbSet<TicketImage> TicketImages { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -86,6 +88,49 @@ namespace FixItNow.Infrastructure.Models.Commons
                     .WithOne(u => u.TechnicianProfile)
                     .HasForeignKey<TechnicianProfile>(tp => tp.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<ChatMessage>(entity =>
+            {
+                entity.ToTable("ChatMessages");
+
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.Message)
+                    .IsRequired()
+                    .HasMaxLength(2000);
+
+                entity.Property(x => x.CreatedAt)
+                    .IsRequired();
+
+                entity.Property(x => x.IsRead)
+                    .HasDefaultValue(false);
+
+                // Sender relationship
+                entity.HasOne(x => x.Sender)
+                    .WithMany(x => x.SentMessages)
+                    .HasForeignKey(x => x.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Receiver relationship
+                entity.HasOne(x => x.Receiver)
+                    .WithMany(x => x.ReceivedMessages)
+                    .HasForeignKey(x => x.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Ticket relationship
+                entity.HasOne(x => x.Ticket)
+                    .WithMany(x => x.ChatMessages)
+                    .HasForeignKey(x => x.TicketId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Indexes
+                entity.HasIndex(x => x.TicketId);
+
+                entity.HasIndex(x => new
+                {
+                    x.TicketId,
+                    x.CreatedAt
+                });
             });
         }
     }

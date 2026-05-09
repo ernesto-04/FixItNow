@@ -5,7 +5,7 @@ using FixItNow.Domain.Models.Accesses;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace FixItNow.Application
+namespace FixItNow.Application.Services
 {
     public interface IJwtService
     {

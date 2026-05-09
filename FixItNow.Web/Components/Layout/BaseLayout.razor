@@ -1,16 +1,17 @@
-﻿@using FixItNow.Web.Components.Custom.Profile
-@using FixItNow.Web.Components.Pages.Technician
+﻿@using System.Security.Claims
+@using FixItNow.Domain.Models.DTOs
+@using FixItNow.Web.Components.Custom.Profile
 @inherits LayoutComponentBase
 
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
-@inject IDialogService DialogService
 @inject AppState AppState
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <MudThemeProvider Theme="ThemeHelper.Default" />
 <MudPopoverProvider />
-<MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
@@ -18,7 +19,7 @@
     <!-- 🔝 TOP BAR -->
     <MudAppBar Elevation="1" Color="Color.Primary">
 
-        <MudIconButton Icon="@(_drawerOpen ? Icons.Material.Filled.ArrowBack : Icons.Material.Filled.Menu)"
+        <MudIconButton Icon="@(_drawerOpen? Icons.Material.Filled.ArrowBack : Icons.Material.Filled.Menu)"
                        Color="Color.Inherit"
                        Edge="Edge.Start"
                        OnClick="ToggleDrawer" />
@@ -31,47 +32,143 @@
                    Class="mr-2">
 
             @(AppState.Mode == "technician"
-                ? "Switch to Customer"
-                : "Become a Technician")
+                        ? "Switch to Customer"
+                        : "Become a Technician")
 
         </MudButton>
 
-        <Profile/>
+        <Profile />
 
     </MudAppBar>
 
-    <!-- 📂 Drawer -->
-    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive">
+    <!-- 📂 LEFT NAVIGATION -->
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="DrawerVariant.Responsive">
+
         <NavMenu />
+
     </MudDrawer>
 
-    <!-- 📄 Content -->
+    <!-- 👉 RIGHT SLIDE PANEL -->
+    <MudDrawer Anchor="Anchor.End"
+               Width="420px"
+               Elevation="10"
+               Variant="DrawerVariant.Temporary"
+               Class="technician-panel"
+               @bind-Open="_showTechnicianPanel">
+
+        <div class="pa-6">
+
+            <div class="d-flex justify-space-between align-center mb-4">
+
+                <MudText Typo="Typo.h5" Color="Color.Dark">
+                    Become a Technician
+                </MudText>
+
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                               Color="Color.Default"
+                               OnClick="@(() => _showTechnicianPanel = false)" />
+
+            </div>
+
+            <MudText Typo="Typo.body2"
+                     Color="Color.Secondary"
+                     Class="mb-6">
+
+                Fill in your professional details to start accepting service requests.
+
+            </MudText>
+
+            <MudTextField @bind-Value="_request.Skills"
+                          Label="Skills"
+                          Placeholder="AC Repair, Plumbing, Electrical..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Class="mb-4"
+                          Required="true" />
+
+            <MudTextField @bind-Value="_request.Location"
+                          Label="Location"
+                          Placeholder="Palembang"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Class="mb-4"
+                          Required="true" />
+
+            <MudTextField @bind-Value="_request.Bio"
+                          Label="Short Bio"
+                          Placeholder="Tell customers about your experience..."
+                          Variant="Variant.Outlined"
+                          Lines="4"
+                          Margin="Margin.Dense"
+                          Class="mb-6" />
+
+            <MudButton FullWidth="true"
+                       Size="Size.Large"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="_isSubmitting"
+                       OnClick="SubmitBecomeTechnician">
+
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Indeterminate="true"
+                                         Size="Size.Small"
+                                         Class="mr-2" />
+                }
+
+                Submit Application
+
+            </MudButton>
+
+        </div>
+
+    </MudDrawer>
+
+    <!-- 📄 PAGE CONTENT -->
     <MudMainContent>
+
         <article class="content px-4">
+
             <AuthorizeView>
                 <Authorized>
                     @Body
                 </Authorized>
+
                 <NotAuthorized>
-                    <p>Not authorized</p>
+                    <MudText Typo="Typo.h6">
+                        Not authorized
+                    </MudText>
                 </NotAuthorized>
             </AuthorizeView>
+
         </article>
+
     </MudMainContent>
 
 </MudLayout>
 
 @code {
+
     private bool _drawerOpen = true;
     private bool _isTechnician;
+    private bool _showTechnicianPanel;
+    private bool _isSubmitting;
 
-    private bool _initialized = false;
+    private CreateTechnicianProfileRequest _request = new();
+
+    private bool _loaded;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += Refresh;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_initialized)
+        if (firstRender && !_loaded)
         {
-            _initialized = true;
+            _loaded = true;
 
             var result = await LocalStorage.GetAsync<string>("mode");
 
@@ -81,17 +178,20 @@
             }
             else
             {
-                // ✅ DEFAULT → Customer
                 AppState.SetMode("customer");
+
                 await LocalStorage.SetAsync("mode", "customer");
             }
 
             _isTechnician = await IsTechnician();
 
-            AppState.OnChange += StateHasChanged;
-
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private void Refresh()
+    {
+        InvokeAsync(StateHasChanged);
     }
 
     private void ToggleDrawer()
@@ -103,50 +203,83 @@
     {
         if (AppState.Mode == "technician")
         {
-            // 👉 Switch to customer
             AppState.SetMode("customer");
+
             await LocalStorage.SetAsync("mode", "customer");
 
             NavigationManager.NavigateTo("/customer-tickets");
+
+            return;
+        }
+
+        if (_isTechnician)
+        {
+            AppState.SetMode("technician");
+
+            await LocalStorage.SetAsync("mode", "technician");
+
+            NavigationManager.NavigateTo("/available-tickets");
         }
         else
         {
-            if (_isTechnician)
-            {
-                // 👉 Switch to technician
-                AppState.SetMode("technician");
-                await LocalStorage.SetAsync("mode", "technician");
+            _showTechnicianPanel = true;
+        }
+    }
 
-                NavigationManager.NavigateTo("/available-tickets");
-            }
-            else
-            {
-                // 👉 Not a technician → open dialog
-                var dialog = await DialogService.ShowAsync<BecomeTechnicianDialog>("Become Technician");
-                var result = await dialog.Result;
+    private async Task SubmitBecomeTechnician()
+    {
+        try
+        {
+            _isSubmitting = true;
 
-                if (!result.Canceled)
-                {
-                    AppState.SetMode("technician");
-                    await LocalStorage.SetAsync("mode", "technician");
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-                    NavigationManager.NavigateTo("/available-tickets");
-                }
-            }
+            var user = authState.User;
+
+            var claim = user.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (claim is null)
+                return;
+
+            var userId = int.Parse(claim.Value);
+
+            await UserService.BecomeTechnician(userId, _request);
+
+            _isTechnician = true;
+
+            _showTechnicianPanel = false;
+
+            AppState.SetMode("technician");
+
+            await LocalStorage.SetAsync("mode", "technician");
+
+            NavigationManager.NavigateTo("/available-tickets");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            _isSubmitting = false;
         }
     }
 
     private async Task<bool> IsTechnician()
     {
         var token = await LocalStorage.GetAsync<string>("token");
-        if (!token.Success) return false;
+
+        if (!token.Success)
+            return false;
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
             "https://localhost:7008/api/users/is-technician");
 
         request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Value);
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer",
+                token.Value);
 
         var response = await Http.SendAsync(request);
 
@@ -156,6 +289,6 @@
 
     public void Dispose()
     {
-        AppState.OnChange -= StateHasChanged;
+        AppState.OnChange -= Refresh;
     }
 }

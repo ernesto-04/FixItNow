@@ -1,4 +1,4 @@
-﻿using FixItNow.Application;
+﻿using FixItNow.Application.Services;
 using FixItNow.Domain.Models.Accesses;
 using FixItNow.Domain.Models.Authentications;
 using FixItNow.Infrastructure.Models.Commons;

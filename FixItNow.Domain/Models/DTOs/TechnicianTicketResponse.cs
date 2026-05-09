@@ -1,5 +1,4 @@
 ﻿using FixItNow.Domain.Models.Tickets;
-using Microsoft.AspNetCore.Http;
 
 namespace FixItNow.Domain.Models.DTOs
 {
@@ -11,6 +10,8 @@ namespace FixItNow.Domain.Models.DTOs
         public string Category { get; set; }
         public string Location { get; set; }
         public string CustomerName { get; set; }
+        public int CustomerId { get; set; }
+        public int? AssignedTechnicianId { get; set; }
         public TicketStatus Status { get; set; }
 
         public List<string> ImageUrls { get; set; }

@@ -88,6 +88,47 @@ namespace FixItNow.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("FixItNow.Domain.Models.ChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("ReceiverId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId");
+
+                    b.HasIndex("TicketId");
+
+                    b.HasIndex("TicketId", "CreatedAt");
+
+                    b.ToTable("ChatMessages", (string)null);
+                });
+
             modelBuilder.Entity("FixItNow.Domain.Models.Tickets.Ticket", b =>
                 {
                     b.Property<int>("Id")
@@ -170,6 +211,33 @@ namespace FixItNow.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FixItNow.Domain.Models.ChatMessage", b =>
+                {
+                    b.HasOne("FixItNow.Domain.Models.Accesses.User", "Receiver")
+                        .WithMany("ReceivedMessages")
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FixItNow.Domain.Models.Accesses.User", "Sender")
+                        .WithMany("SentMessages")
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FixItNow.Domain.Models.Tickets.Ticket", "Ticket")
+                        .WithMany("ChatMessages")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("FixItNow.Domain.Models.Tickets.Ticket", b =>
                 {
                     b.HasOne("FixItNow.Domain.Models.Accesses.User", "AssignedTechnician")
@@ -205,11 +273,17 @@ namespace FixItNow.Infrastructure.Migrations
 
                     b.Navigation("CreatedTickets");
 
+                    b.Navigation("ReceivedMessages");
+
+                    b.Navigation("SentMessages");
+
                     b.Navigation("TechnicianProfile");
                 });
 
             modelBuilder.Entity("FixItNow.Domain.Models.Tickets.Ticket", b =>
                 {
+                    b.Navigation("ChatMessages");
+
                     b.Navigation("Images");
                 });
 #pragma warning restore 612, 618

@@ -111,7 +111,7 @@
                                 <MudButton Variant="Variant.Outlined"
                                            Color="Color.Info"
                                            FullWidth="true"
-                                           @onclick="() => OpenChat(ticket.Id)">
+                                           @onclick="@(() => OpenChat(ticket.Id))">
                                     Chat Customer
                                 </MudButton>
                             }

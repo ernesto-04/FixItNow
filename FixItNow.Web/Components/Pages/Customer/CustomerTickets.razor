@@ -83,8 +83,10 @@
 
                         <MudCardActions>
 
-                            @if (ticket.Status == TicketStatus.Assigned || ticket.Status == TicketStatus.InProgress)
-                            {
+                            @if ((ticket.Status == TicketStatus.Assigned ||
+                                                ticket.Status == TicketStatus.InProgress)
+                                                && ticket.AssignedTechnicianId > 0)
+                                                {
                                 <MudButton Variant="Variant.Outlined"
                                            Color="Color.Success"
                                            @onclick="@(() => OpenChat(ticket.Id))">

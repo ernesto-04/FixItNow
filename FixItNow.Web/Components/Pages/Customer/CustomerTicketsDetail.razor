@@ -111,12 +111,9 @@
                     <!-- ACTIONS -->
                     @if (ticket.Status == TicketStatus.Assigned || ticket.Status == TicketStatus.InProgress)
                     {
-                        <MudButton FullWidth="true"
-                                   Variant="Variant.Filled"
-                                   Color="Color.Success"
-                                   Class="mb-2">
-                            Chat Technician
-                        </MudButton>
+                        <TicketChat TicketId="@ticket.Id"
+                                    CurrentUserId="@CurrentUserId"
+                                    TechnicianId="@ticket.AssignedTechnicianId" />
                     }
 
                     @if (ticket.Status == TicketStatus.Completed)
@@ -148,9 +145,17 @@
     [Parameter] public int Id { get; set; }
 
     private CustomerTicketResponse ticket;
+    private int CurrentUserId;
 
     protected override async Task OnInitializedAsync()
     {
+        var userResult = await LocalStorage.GetAsync<int>("userId");
+
+        if (userResult.Success)
+        {
+            CurrentUserId = userResult.Value;
+        }
+
         await LoadTicket();
     }
 

@@ -11,7 +11,7 @@ public class ChatHub : Hub
     public ChatHub(IChatService chatService, ILogger<ChatHub> logger)
     {
         _chatService = chatService;
-        _logger = logger;
+        _logger = logger;   
     }
 
     // Join ticket room

@@ -1,4 +1,5 @@
 ﻿using FixItNow.Domain.Models.Tickets;
+using Microsoft.AspNetCore.Http;
 
 namespace FixItNow.Domain.Models.DTOs
 {

@@ -1,4 +1,5 @@
-﻿using FixItNow.Domain.Models.DTOs;
+﻿using System;
+using FixItNow.Domain.Models.DTOs;
 using FixItNow.Domain.Models.Tickets;
 using FixItNow.Infrastructure.Models.Commons;
 using Microsoft.AspNetCore.Hosting;
@@ -237,24 +238,24 @@ namespace FixItNow.Application.Services
                 return null;
 
             return new TicketChatResponse
-            {
-                Id = ticket.Id,
+                {
+                    Id = ticket.Id,
 
-                CustomerId = ticket.CustomerId,
+                    CustomerId = ticket.CustomerId,
 
-                AssignedTechnicianId =
+                    AssignedTechnicianId =
             ticket.AssignedTechnicianId,
 
-                TechnicianName =
+                    TechnicianName =
             ticket.AssignedTechnician?.Email,
 
-                CustomerName =
+                    CustomerName =
             ticket.Customer.Email,
 
-                Status = ticket.Status,
+                    Status = ticket.Status,
 
-                Title = ticket.Title,
-                ReceiverId =
+                    Title = ticket.Title,
+                    ReceiverId =
     ticket.CustomerId == userId
         ? ticket.AssignedTechnicianId ?? 0
         : ticket.CustomerId

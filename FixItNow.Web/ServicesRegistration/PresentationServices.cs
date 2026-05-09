@@ -1,4 +1,5 @@
-﻿using FixItNow.Application.Services;
+﻿using FixItNow.Application;
+using FixItNow.Application.Services;
 using FixItNow.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -17,7 +18,7 @@ namespace FixItNow.Presentation
             services.AddScoped<IChatService, ChatService>();
 
             services.AddMudServices();
-
+            
 
             return services;
         }

@@ -51,14 +51,19 @@
         <MudCardActions>
             <MudGrid>
                 <MudItem xs="12" Class="d-flex">
-                    <MudButton StartIcon="@Icons.Material.Filled.Login" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="Authenticate">
+                    <MudButton StartIcon="@Icons.Material.Filled.Login"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Disabled="_isLoading"
+                               OnClick="Authenticate">
                         @if (_isLoading)
                         {
                             <MudProgressCircular Color="Color.Default" Indeterminate="true" StrokeWidth="1" Size="Size.Small" />
                         }
                         else
                         {
-                            <p>Sign In</p>
+                            <span>Sign In</span>
                         }
                     </MudButton>
                 </MudItem>
@@ -81,11 +86,15 @@
         </MudCardActions>
     </MudCard>
 </MudForm>
-@if (_pageError != "")
+@if (!string.IsNullOrWhiteSpace(_pageError))
 {
-    <div class="alert error mt-8 mb-0" style="color: red; font-weight: bold;">
+    <MudAlert Severity="Severity.Error"
+              Dense="true"
+              Class="mt-4">
+
         @_pageError
-    </div>
+
+    </MudAlert>
 }
 
 @code {
@@ -146,30 +155,45 @@
     {
         try
         {
+            _pageError = string.Empty;
+
             _isLoading = true;
-            StateHasChanged();
 
             var response = await _authService.Login(authRequest);
-            await ((CustomAuthStateProvider)_authStateProvider).StartSession(response.Token);
+
+            await ((CustomAuthStateProvider)_authStateProvider)
+                .StartSession(response.Token);
 
             if (MudDialog is null)
             {
-                NavigationManager.NavigateTo(string.IsNullOrWhiteSpace(RedirectUrl) ? "/customer-tickets" : RedirectUrl, true, true);
+                NavigationManager.NavigateTo(
+                    string.IsNullOrWhiteSpace(RedirectUrl)
+                        ? "/create-ticket"
+                        : RedirectUrl,
+                    true,
+                    true);
             }
             else
             {
                 MudDialog.Close();
-                if (SessionCheckerTimer != null) SessionCheckerTimer.Start();
+
+                if (SessionCheckerTimer != null)
+                {
+                    SessionCheckerTimer.Start();
+                }
             }
         }
-        catch(Exception e)
+        catch (InvalidOperationException ex)
         {
-            _pageError = e.Message;
+            _pageError = ex.Message;
+        }
+        catch (Exception)
+        {
+            _pageError = "Something went wrong during login.";
         }
         finally
         {
             _isLoading = false;
-            StateHasChanged();
         }
     }
 }

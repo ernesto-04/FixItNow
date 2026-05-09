@@ -9,10 +9,16 @@
             <CardHeaderContent>
                 <MudGrid>
                     <MudItem xs="12" Class="d-flex justify-center align-center">
-                        <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#46A583;color:white;border-radius:8px" class="mr-2">
-                            <MudIcon Icon="@Icons.Material.Rounded.Build" Size="Size.Medium" />
+                        <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#46A583;color:white;border-radius:8px"
+                             class="mr-2">
+
+                            <MudIcon Icon="@Icons.Material.Rounded.Build"
+                                     Size="Size.Medium" />
                         </div>
-                        <MudText Typo="Typo.h6">FixItNow</MudText>
+
+                        <MudText Typo="Typo.h6">
+                            FixItNow
+                        </MudText>
                     </MudItem>
 
                     <MudItem xs="12" Class="d-flex">
@@ -25,19 +31,29 @@
         </MudCardHeader>
 
         <MudCardContent>
-            <FixItNow.Web.Components.Custom.Progress.CircularLoader Visible="@_isLoading" />
+
+            @if (_isLoading)
+            {
+                <div class="d-flex justify-center mb-4">
+                    <MudProgressCircular Indeterminate="true"
+                                         Color="Color.Primary" />
+                </div>
+            }
 
             <MudGrid>
+
                 <MudItem xs="12">
                     <MudTextField @bind-Value="registerRequest.FullName"
                                   Label="Full Name"
+                                  Variant="Variant.Outlined"
                                   Required="true"
-                                  RequiredError="Name is required" />
+                                  RequiredError="Full Name is required" />
                 </MudItem>
 
                 <MudItem xs="12">
                     <MudTextField @bind-Value="registerRequest.Username"
                                   Label="Username"
+                                  Variant="Variant.Outlined"
                                   Required="true"
                                   RequiredError="Username is required" />
                 </MudItem>
@@ -45,6 +61,8 @@
                 <MudItem xs="12">
                     <MudTextField @bind-Value="registerRequest.Email"
                                   Label="Email"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
                                   Required="true"
                                   RequiredError="Email is required" />
                 </MudItem>
@@ -52,112 +70,149 @@
                 <MudItem xs="12">
                     <MudTextField @bind-Value="registerRequest.Password"
                                   Label="Password"
+                                  Variant="Variant.Outlined"
                                   InputType="@_passwordInput"
                                   Required="true"
+                                  RequiredError="Password is required"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@_passwordIcon"
-                                  OnAdornmentClick="OnShowHidePasswordClick"
-                                  RequiredError="Password is required" />
+                                  OnAdornmentClick="OnShowHidePasswordClick" />
                 </MudItem>
 
                 <MudItem xs="12">
                     <MudTextField @bind-Value="confirmPassword"
                                   Label="Confirm Password"
+                                  Variant="Variant.Outlined"
                                   InputType="@_passwordInput"
                                   Required="true"
-                                  RequiredError="Confirm password is required" />
+                                  RequiredError="Confirm Password is required"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@_passwordIcon"
+                                  OnAdornmentClick="OnShowHidePasswordClick" />
                 </MudItem>
+
             </MudGrid>
+
+            @if (!string.IsNullOrWhiteSpace(_pageError))
+            {
+                <MudAlert Severity="Severity.Error"
+                          Dense="true"
+                          Class="mt-4">
+
+                    @_pageError
+
+                </MudAlert>
+            }
+
         </MudCardContent>
 
         <MudCardActions>
             <MudGrid>
+
                 <MudItem xs="12" Class="d-flex">
+
                     <MudButton StartIcon="@Icons.Material.Filled.PersonAdd"
                                Variant="Variant.Filled"
                                Color="Color.Primary"
                                FullWidth="true"
+                               Disabled="_isLoading"
                                OnClick="Regis">
 
                         @if (_isLoading)
                         {
-                            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                            <MudProgressCircular Indeterminate="true"
+                                                 Size="Size.Small"
+                                                 Class="mr-2" />
+                            <span>Registering...</span>
                         }
                         else
                         {
-                            <p>Register</p>
+                            <span>Register</span>
                         }
+
                     </MudButton>
+
                 </MudItem>
+
                 <MudItem xs="12" Class="d-flex justify-center mt-4">
+
                     <MudText Typo="Typo.caption">
                         Already have account?
                         <MudLink Href="/">Login</MudLink>
                     </MudText>
+
                 </MudItem>
+
             </MudGrid>
         </MudCardActions>
     </MudCard>
 </MudForm>
 
-@if (_pageError != "")
-{
-    <div class="alert error mt-8 mb-0" style="color: red; font-weight: bold;">
-        @_pageError
-    </div>
-}
-
 @code {
-    @inject IAuthenticationService _authService
-    @inject NavigationManager NavigationManager
 
-    RegisterRequest registerRequest = new();
-    string confirmPassword = string.Empty;
+    [Inject]
+    private IAuthenticationService _authService { get; set; }
 
-    bool _isLoading = false;
-    string _pageError = string.Empty;
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
 
-    bool _isShowPassword = false;
-    InputType _passwordInput = InputType.Password;
-    string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+    private RegisterRequest registerRequest = new();
 
-    void OnShowHidePasswordClick()
+    private string confirmPassword = string.Empty;
+
+    private bool _isLoading = false;
+
+    private string _pageError = string.Empty;
+
+    private bool _isShowPassword = false;
+
+    private InputType _passwordInput = InputType.Password;
+
+    private string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void OnShowHidePasswordClick()
     {
         _isShowPassword = !_isShowPassword;
 
-        _passwordInput = _isShowPassword ? InputType.Text : InputType.Password;
+        _passwordInput = _isShowPassword
+            ? InputType.Text
+            : InputType.Password;
+
         _passwordIcon = _isShowPassword
             ? Icons.Material.Filled.Visibility
             : Icons.Material.Filled.VisibilityOff;
     }
 
-    async Task Regis()
+    private async Task Regis()
     {
         try
         {
             _pageError = string.Empty;
 
+            // Validate password confirmation
             if (registerRequest.Password != confirmPassword)
             {
-                _pageError = "Passwords do not match";
-                return;
+                throw new InvalidOperationException(
+                    "Passwords do not match.");
             }
 
             _isLoading = true;
-            StateHasChanged();
 
             await _authService.Register(registerRequest);
 
             NavigationManager.NavigateTo("/", true);
         }
-        catch (Exception e)
+        catch (InvalidOperationException ex)
         {
-            _pageError = e.Message;
+            _pageError = ex.Message;
+        }
+        catch (Exception)
+        {
+            _pageError = "Something went wrong.";
         }
         finally
         {
             _isLoading = false;
-            StateHasChanged();
         }
     }
 }

@@ -1,0 +1,67 @@
+﻿@using Microsoft.AspNetCore.Components.Routing
+@inject AppState AppState
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">FixItNow</a>
+    </div>
+</div>
+
+<div class="nav-scrollable">
+    <nav class="flex-column">
+
+        @foreach (var item in MenuItems)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="@item.Href">
+                    <span class="@item.Icon me-2"></span>
+                    @item.Text
+                </NavLink>
+            </div>
+        }
+
+    </nav>
+</div>
+
+@code {
+    private List<NavItem> MenuItems = new();
+
+    protected override void OnInitialized()
+    {
+        BuildMenu();
+        AppState.OnChange += HandleStateChange;
+    }
+
+    private void HandleStateChange()
+    {
+        BuildMenu();
+        StateHasChanged();
+    }
+
+    private void BuildMenu()
+    {
+        if (AppState.Mode == "technician")
+        {
+            MenuItems = new()
+            {
+                new("Available Tickets", "/available-tickets", "bi bi-briefcase-fill"),
+                new("My Jobs", "/technician-tickets", "bi bi-tools")
+            };
+        }
+        else
+        {
+            MenuItems = new()
+            {
+                new("Create Ticket", "/create-ticket", "bi bi-plus-square-fill"),
+                new("My Tickets", "/customer-tickets", "bi bi-list-task")
+            };
+        }
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= HandleStateChange;
+    }
+
+    private record NavItem(string Text, string Href, string Icon);
+}

@@ -21,6 +21,9 @@ namespace FixItNow.Domain.Models.Tickets
         public User? AssignedTechnician { get; set; }
 
         public List<TicketImage> Images { get; set; }
+
+        public ICollection<ChatMessage> ChatMessages { get; set; }
+    = new List<ChatMessage>();
     }
 
     public enum TicketStatus

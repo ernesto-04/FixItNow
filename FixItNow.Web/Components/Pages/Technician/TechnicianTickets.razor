@@ -1,11 +1,11 @@
 ﻿@page "/technician-tickets"
-@layout TechnicianLayout
 
 @using MudBlazor
 @using FixItNow.Domain.Models.Tickets
 
 @inject HttpClient Http
 @inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager NavigationManager
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
@@ -37,19 +37,15 @@
             {
                 <MudItem xs="12" sm="6" md="4">
 
-                    <MudCard Class="rounded-xl">
+                    <MudCard Class="rounded-xl hover-card"
+                             Style="cursor:pointer;"
+                             @onclick="@(() => GoToDetail(ticket.Id))">
 
                         <!-- IMAGE -->
                         @if (ticket.ImageUrls != null && ticket.ImageUrls.Any())
                         {
-                            <MudGrid>
-                                @foreach (var img in ticket.ImageUrls)
-                                {
-                                    <MudItem xs="4">
-                                        <MudImage Src="@img" Class="rounded-lg" />
-                                    </MudItem>
-                                }
-                            </MudGrid>
+                            <MudImage Src="@ticket.ImageUrls.First()"
+                                      Style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:12px 12px 0 0;" />
                         }
 
                         <MudCardContent>
@@ -98,7 +94,7 @@
                                 <MudButton Variant="Variant.Filled"
                                            Color="Color.Primary"
                                            FullWidth="true"
-                                           OnClick="() => UpdateStatus(ticket.Id, TicketStatus.InProgress)">
+                                           @onclick="() => UpdateStatus(ticket.Id, TicketStatus.InProgress)">
                                     Start Job
                                 </MudButton>
                             }
@@ -107,8 +103,16 @@
                                 <MudButton Variant="Variant.Filled"
                                            Color="Color.Success"
                                            FullWidth="true"
-                                           OnClick="() => UpdateStatus(ticket.Id, TicketStatus.Completed)">
+                                           @onclick="() => UpdateStatus(ticket.Id, TicketStatus.Completed)">
                                     Complete Job
+                                </MudButton>
+
+                                <!-- CHAT BUTTON -->
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Info"
+                                           FullWidth="true"
+                                           @onclick="@(() => OpenChat(ticket.Id))">
+                                    Chat Customer
                                 </MudButton>
                             }
                             else if (ticket.Status == TicketStatus.Completed)
@@ -180,6 +184,16 @@
         {
             await LoadTickets();
         }
+    }
+
+    private void GoToDetail(int id)
+    {
+        NavigationManager.NavigateTo($"/technician-tickets/{id}");
+    }
+
+    private void OpenChat(int ticketId)
+    {
+        NavigationManager.NavigateTo($"/chat/{ticketId}");
     }
 
     private string Shorten(string text)

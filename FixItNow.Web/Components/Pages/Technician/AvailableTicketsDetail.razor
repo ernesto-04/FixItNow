@@ -1,0 +1,242 @@
+﻿@page "/available-tickets/{Id:int}"
+
+@using FixItNow.Domain.Models.Tickets
+@using MudBlazor
+
+@inject HttpClient Http
+@inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+
+    @if (ticket == null)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <!-- TITLE -->
+        <MudText Typo="Typo.h4" Class="mb-2">
+            @ticket.Title
+        </MudText>
+
+        <!-- CATEGORY + STATUS -->
+        <div class="mb-4">
+            <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined">
+                @ticket.Category
+            </MudChip>
+
+            <MudChip T="string" Class="ml-2"
+                     Color="@GetStatusColor(ticket.Status)">
+                @ticket.Status
+            </MudChip>
+        </div>
+
+        <!-- IMAGE GALLERY -->
+        @if (ticket.ImageUrls != null && ticket.ImageUrls.Any())
+        {
+            <MudGrid Class="mb-4">
+                @foreach (var img in ticket.ImageUrls)
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudImage Src="@img"
+                                  Style="width:100%; height:200px; object-fit:cover; border-radius:12px;" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+
+        <MudGrid>
+
+            <!-- LEFT -->
+            <MudItem xs="12" md="8">
+
+                <MudPaper Class="pa-4 rounded-xl" Elevation="2">
+
+                    <MudText Typo="Typo.h6" Class="mb-2">
+                        Description
+                    </MudText>
+
+                    <MudText Typo="Typo.body1" Class="mb-4">
+                        @ticket.Description
+                    </MudText>
+
+                    <MudDivider Class="my-3" />
+
+                    <MudText Typo="Typo.subtitle2">
+                        Location
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        @ticket.Location
+                    </MudText>
+
+                </MudPaper>
+
+            </MudItem>
+
+            <!-- RIGHT SIDEBAR -->
+            <MudItem xs="12" md="4">
+
+                <MudPaper Class="pa-4 rounded-xl" Elevation="2">
+
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        Job Info
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        <b>Status:</b> @ticket.Status
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        <b>Category:</b> @ticket.Category
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        <b>Created:</b> @ticket.CreatedAt.ToString("dd MMM yyyy")
+                    </MudText>
+
+                    <MudDivider Class="my-3" />
+
+                    <MudText Typo="Typo.subtitle2">
+                        Customer
+                    </MudText>
+
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        @ticket.CustomerName
+                    </MudText>
+
+                    <!-- ACTIONS -->
+                    @if (ticket.Status == TicketStatus.Unassigned)
+                    {
+                        <MudButton FullWidth="true"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => AcceptTicket(ticket.Id))">
+                            Accept Job
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudMenu Label="Update Status" FullWidth="true">
+
+                            <MudMenuItem OnClick="@(() => UpdateStatus(ticket.Id, TicketStatus.Assigned))">
+                                Start Job
+                            </MudMenuItem>
+
+                            <MudMenuItem OnClick="@(() => UpdateStatus(ticket.Id, TicketStatus.InProgress))">
+                                In Progress
+                            </MudMenuItem>
+
+                            <MudMenuItem OnClick="@(() => UpdateStatus(ticket.Id, TicketStatus.Completed))">
+                                Complete
+                            </MudMenuItem>
+
+                        </MudMenu>
+
+                        <MudButton FullWidth="true"
+                                   Class="mt-2"
+                                   Variant="Variant.Outlined"
+                                   Color="Color.Success">
+                            Chat Customer
+                        </MudButton>
+                    }
+
+                </MudPaper>
+
+            </MudItem>
+
+        </MudGrid>
+
+        <MudButton Class="mt-4"
+                   Variant="Variant.Text"
+                   OnClick="@(() => NavigationManager.NavigateTo("/available-tickets"))">
+            ← Back
+        </MudButton>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private AvailableTicketResponse ticket;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTicket();
+    }
+
+    private async Task<string> GetToken()
+    {
+        var token = await LocalStorage.GetAsync<string>("token");
+        return token.Success ? token.Value : null;
+    }
+
+    private async Task LoadTicket()
+    {
+        var token = await GetToken();
+        if (token == null) return;
+
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            $"https://localhost:7008/api/tickets/{Id}/technician");
+
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            ticket = await response.Content
+                .ReadFromJsonAsync<AvailableTicketResponse>();
+        }
+    }
+
+    private async Task AcceptTicket(int ticketId)
+    {
+        var token = await GetToken();
+        if (token == null) return;
+
+        var request = new HttpRequestMessage(HttpMethod.Post,
+            $"https://localhost:7008/api/tickets/{ticketId}/accept");
+
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadTicket();
+        }
+    }
+
+    private async Task UpdateStatus(int ticketId, TicketStatus newStatus)
+    {
+        var token = await GetToken();
+        if (token == null) return;
+
+        var request = new HttpRequestMessage(HttpMethod.Put,
+            $"https://localhost:7008/api/tickets/{ticketId}/status?status={newStatus}");
+
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        await Http.SendAsync(request);
+
+        await LoadTicket();
+    }
+
+    private Color GetStatusColor(TicketStatus status)
+    {
+        return status switch
+        {
+            TicketStatus.Unassigned => Color.Default,
+            TicketStatus.Assigned => Color.Info,
+            TicketStatus.InProgress => Color.Warning,
+            TicketStatus.Completed => Color.Success,
+            _ => Color.Default
+        };
+    }
+}

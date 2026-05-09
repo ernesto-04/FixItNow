@@ -1,11 +1,11 @@
 ﻿@page "/available-tickets"
-@layout TechnicianLayout
 
 @using MudBlazor
 @using FixItNow.Domain.Models.Tickets
 
 @inject HttpClient Http
 @inject ProtectedLocalStorage LocalStorage
+@inject NavigationManager NavigationManager
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
@@ -37,94 +37,55 @@
             {
                 <MudItem xs="12" sm="6" md="4">
 
-                    <MudCard Class="rounded-xl">
+                    <MudCard Class="rounded-xl hover-card"
+                         Style="cursor:pointer;"
+                         @onclick="@(() => GoToDetail(ticket.Id))">
 
-                        <!-- IMAGE -->
-                        @if (ticket.ImageUrls != null && ticket.ImageUrls.Any())
-                        {
-                            <MudGrid>
-                                @foreach (var img in ticket.ImageUrls)
-                                {
-                                    <MudItem xs="4">
-                                        <MudImage Src="@img" Class="rounded-lg" />
-                                    </MudItem>
-                                }
-                            </MudGrid>
-                        }
+                    <!-- IMAGE -->
+                    @if (ticket.ImageUrls != null && ticket.ImageUrls.Any())
+                    {
+                        <MudImage Src="@ticket.ImageUrls.First()"
+                                  Style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:12px 12px 0 0;" />
+                    }
 
-                        <MudCardContent>
+                    <MudCardContent>
 
-                            <!-- TITLE -->
-                            <MudText Typo="Typo.h6">
-                                @ticket.Title
-                            </MudText>
+                        <!-- TITLE -->
+                        <MudText Typo="Typo.h6">
+                            @ticket.Title
+                        </MudText>
 
-                            <!-- DESCRIPTION -->
-                            <MudText Typo="Typo.body2" Class="text-muted mb-2">
-                                @Shorten(ticket.Description)
-                            </MudText>
+                        <!-- DESCRIPTION -->
+                        <MudText Typo="Typo.body2" Class="text-muted mb-2">
+                            @Shorten(ticket.Description)
+                        </MudText>
 
-                            <!-- CATEGORY -->
-                            <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined">
-                                @ticket.Category
-                            </MudChip>
+                        <!-- CATEGORY -->
+                        <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined">
+                            @ticket.Category
+                        </MudChip>
 
-                            <!-- STATUS -->
-                            <MudChip T="AvailableTicketResponse" Class="ml-2"
-                                     Color="@GetStatusColor(ticket.Status.ToString())">
-                                @ticket.Status
-                            </MudChip>
+                        <!-- STATUS -->
+                        <MudChip T="string" Class="ml-2"
+                                 Color="@GetStatusColor(ticket.Status.ToString())">
+                            @ticket.Status
+                        </MudChip>
 
-                            <MudDivider Class="my-2" />
+                        <MudDivider Class="my-2" />
 
-                            <!-- LOCATION -->
-                            <MudText Typo="Typo.caption">
-                                Location: @ticket.Location
-                            </MudText>
+                        <!-- LOCATION -->
+                        <MudText Typo="Typo.caption">
+                            📍 @ticket.Location
+                        </MudText>
 
-                            <br />
+                        <!-- CUSTOMER -->
+                        <MudText Typo="Typo.caption">
+                            👤 @ticket.CustomerName
+                        </MudText>
 
-                            <!-- CUSTOMER -->
-                            <MudText Typo="Typo.caption">
-                                Customer: @ticket.CustomerName
-                            </MudText>
+                    </MudCardContent>
 
-                        </MudCardContent>
-
-                        <MudCardActions>
-
-                            @if (ticket.Status == TicketStatus.Unassigned)
-                            {
-                                <MudButton Variant="Variant.Filled"
-                                           Color="Color.Primary"
-                                           FullWidth="true"
-                                           OnClick="() => AcceptTicket(ticket.Id)">
-                                    Accept Job
-                                </MudButton>
-                            }
-                            else
-                            {
-                                <MudMenu Label="Update Status" Variant="Variant.Outlined">
-
-                                    <MudMenuItem OnClick="() => UpdateStatus(ticket.Id, TicketStatus.Assigned)">
-                                        Start Job
-                                    </MudMenuItem>
-
-                                    <MudMenuItem OnClick="() => UpdateStatus(ticket.Id, TicketStatus.InProgress)">
-                                        In Progress
-                                    </MudMenuItem>
-
-                                    <MudMenuItem OnClick="() => UpdateStatus(ticket.Id, TicketStatus.Completed)">
-                                        Complete
-                                    </MudMenuItem>
-
-                                </MudMenu>
-                            }
-
-                        </MudCardActions>
-
-                    </MudCard>
-
+                </MudCard>
                 </MudItem>
             }
         </MudGrid>
@@ -166,25 +127,6 @@
         }
     }
 
-    private async Task AcceptTicket(int ticketId)
-    {
-        var token = await GetToken();
-        if (token == null) return;
-
-        var request = new HttpRequestMessage(HttpMethod.Post,
-            $"https://localhost:7008/api/tickets/{ticketId}/accept");
-
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var response = await Http.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
-        {
-            await LoadTickets();
-        }
-    }
-
     private async Task UpdateStatus(int ticketId, TicketStatus newStatus)
     {
         var token = await GetToken();
@@ -218,5 +160,10 @@
             "Completed" => Color.Success,
             _ => Color.Default
         };
+    }
+
+    private void GoToDetail(int id)
+    {
+        NavigationManager.NavigateTo($"/available-tickets/{id}");
     }
 }

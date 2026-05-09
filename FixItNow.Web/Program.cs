@@ -36,6 +36,8 @@ app.MapRazorComponents<App>()
 
 app.MapControllers();
 
+app.MapHub<ChatHub>("/chathub");
+
 
 using (var scope = app.Services.CreateScope())
 {

@@ -83,11 +83,6 @@
     height: 5px;
 }
 
-html, body {
-    font-family: 'Kalbe System';
-    color: #5e5873;
-}
-
 a, .btn-link {
     color: #006bb7;
 }
@@ -259,3 +254,30 @@ h1:focus {
     right: 4px;
     background: white;
 }
+
+.hover-card {
+    transition: all 0.2s ease;
+}
+
+    .hover-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+.technician-panel {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+}
+
+    .technician-panel .mud-input-control {
+        background-color: white;
+    }
+
+    .technician-panel .mud-input > input,
+    .technician-panel textarea {
+        color: #111827 !important;
+    }
+
+    .technician-panel .mud-input-label {
+        color: #6b7280 !important;
+    }

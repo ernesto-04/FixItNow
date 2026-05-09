@@ -12,7 +12,11 @@ namespace FixItNow.Domain.Models.DTOs
         public string Location { get; set; }
         public string TechnicianName { get; set; }
         public TicketStatus Status { get; set; }
+        public int? AssignedTechnicianId { get; set; }
+        public int CustomerId { get; set; }
 
         public List<string> ImageUrls { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

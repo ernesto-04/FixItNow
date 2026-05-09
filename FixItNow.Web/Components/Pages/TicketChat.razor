@@ -1,0 +1,286 @@
+﻿@page "/chat/{TicketId:int}"
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using FixItNow.Domain.Models
+@using FixItNow.Domain.Models.DTOs
+@using FixItNow.Domain.Models.Tickets
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject ProtectedLocalStorage LocalStorage
+
+<MudContainer MaxWidth="MaxWidth.False"
+              Class="pa-0 fill-height">
+
+    <MudGrid Style="height:100vh;">
+
+        <!-- LEFT SIDEBAR -->
+        <MudItem xs="12" md="3"
+                 Class="border-right">
+
+            <MudPaper Class="pa-4 fill-height">
+
+                <MudText Typo="Typo.h6"
+                         Class="mb-4">
+
+                    Messages
+
+                </MudText>
+
+                @if (ticket != null)
+                {
+                    <MudPaper Class="pa-3 cursor-pointer"
+                              Elevation="1">
+
+                        <MudText Typo="Typo.subtitle1">
+                            @ticket.Title
+                        </MudText>
+
+                        <MudText Typo="Typo.caption">
+                            @ticket.TechnicianName
+                        </MudText>
+
+                    </MudPaper>
+                }
+
+            </MudPaper>
+
+        </MudItem>
+
+        <!-- CHAT AREA -->
+        <MudItem xs="12" md="9">
+
+            <MudPaper Class="d-flex flex-column"
+                      Style="height:100vh;">
+
+                <!-- HEADER -->
+                <MudPaper Class="pa-4 border-bottom"
+                          Elevation="1">
+
+                    @if (ticket != null)
+                    {
+                        <MudText Typo="Typo.h6">
+                            @ticket.TechnicianName
+                        </MudText>
+
+                        <MudText Typo="Typo.caption">
+                            About: @ticket.Title
+                        </MudText>
+                    }
+
+                </MudPaper>
+
+                <!-- MESSAGE LIST -->
+                <div class="flex-grow-1 pa-4"
+                     style="overflow-y:auto;">
+
+                    @foreach (var msg in Messages)
+                    {
+                        <div class="d-flex mb-3
+                                @(msg.SenderId == ticket.ReceiverId
+                                                             ? "justify-start"
+                                                             : "justify-end")">
+
+                        <MudPaper Class="pa-3"
+                                  Style="
+                                        max-width:70%;
+                                        border-radius:16px;">
+
+                                <MudText Typo="Typo.body1">
+                                    @msg.Message
+                                </MudText>
+
+                                <MudText Typo="Typo.caption">
+                                    @msg.CreatedAt.ToLocalTime().ToString("HH:mm")
+                                </MudText>
+
+                            </MudPaper>
+
+                        </div>
+                                        }
+
+                </div>
+
+                <!-- INPUT -->
+                <MudPaper Class="pa-4 border-top"
+                          Elevation="1">
+
+                    <MudStack Row="true" Spacing="2">
+
+                        <MudTextField @bind-Value="MessageInput"
+                                      Placeholder="Type a message..."
+                                      FullWidth="true"
+                                      Variant="Variant.Outlined" />
+
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="SendMessage">
+
+                            Send
+
+                        </MudButton>
+
+                    </MudStack>
+
+                </MudPaper>
+
+            </MudPaper>
+
+        </MudItem>
+
+    </MudGrid>
+
+</MudContainer>
+
+@code {
+
+    [Parameter]
+    public int TicketId { get; set; }
+    [Parameter]
+    public int AssignedTechnicianId { get; set; }
+
+    private TicketChatResponse? ticket;
+
+    private HubConnection? hubConnection;
+
+    private List<ChatMessage> Messages = new();
+
+    private string MessageInput = "";
+
+    private int ReceiverId;
+
+
+    private async Task<string?> GetToken()
+    {
+        var token = await LocalStorage.GetAsync<string>("token");
+
+        return token.Success
+            ? token.Value
+            : null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var token = await GetToken();
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"https://localhost:7008/api/tickets/{TicketId}"
+        );
+
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer",
+                token
+            );
+
+        var response = await Http.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(
+                $"Failed to load ticket: {response.StatusCode}"
+            );
+        }
+
+        ticket = await response.Content
+            .ReadFromJsonAsync<TicketChatResponse>();
+
+        if (ticket == null)
+        {
+            throw new Exception(
+                "Ticket response is null"
+            );
+        }
+
+        ReceiverId = ticket.ReceiverId;
+        // Load Old Messages
+        var chatRequest = new HttpRequestMessage(
+        HttpMethod.Get,
+        $"https://localhost:7008/api/chat/ticket/{TicketId}"
+);
+
+        chatRequest.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer",
+                token
+            );
+
+        var chatResponse = await Http.SendAsync(chatRequest);
+
+        if (chatResponse.IsSuccessStatusCode)
+        {
+            var oldMessages =
+                await chatResponse.Content
+                    .ReadFromJsonAsync<List<ChatMessage>>();
+
+            if (oldMessages != null)
+            {
+                Messages = oldMessages;
+            }
+        }
+
+        // SignalR
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(
+                "https://localhost:7008/chatHub",
+                options =>
+                {
+                    options.AccessTokenProvider = async () =>
+                    {
+                        var tokenResult =
+                            await LocalStorage
+                                .GetAsync<string>("token");
+
+                        return tokenResult.Success
+                            ? tokenResult.Value
+                            : null;
+                    };
+                })
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<ChatMessage>(
+            "ReceiveMessage",
+            (message) =>
+            {
+                Messages.Add(message);
+
+                InvokeAsync(StateHasChanged);
+            });
+
+        await hubConnection.StartAsync();
+
+        await hubConnection.SendAsync(
+            "JoinTicketRoom",
+            TicketId
+        );
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(MessageInput))
+            return;
+
+        if (ReceiverId <= 0)
+            return;
+
+        var dto = new SendMessageDto
+        {
+
+            ReceiverId = ReceiverId,
+
+            TicketId = TicketId,
+
+            Message = MessageInput
+        };
+
+        await hubConnection.SendAsync(
+            "SendMessage",
+            dto
+        );
+
+        MessageInput = "";
+    }
+}

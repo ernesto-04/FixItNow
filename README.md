@@ -4,7 +4,9 @@
 
 FixItNow is a web-based service marketplace platform that connects customers with technicians for on-demand issue resolution.
 
-The system enables customers to create service requests, while technicians can browse, accept, and complete tasks through a structured workflow. The project focuses on clean architecture, scalable backend design, and clear separation of concerns.
+The platform allows customers to create service requests, while technicians can browse, accept, manage, and complete tasks through a structured workflow. The system also supports real-time-style communication between customers and technicians through an integrated chat feature.
+
+This project focuses on clean architecture, scalable backend design, and clear separation of concerns.
 
 ---
 
@@ -50,6 +52,8 @@ This project follows **Clean Architecture principles**, ensuring maintainability
 * Dependency injection for service management
 * Service layer abstraction for business logic
 * Async-first approach for scalability
+* Role-based authorization for secure access
+* Modular feature organization for maintainability
 
 ---
 
@@ -77,6 +81,7 @@ This project follows **Clean Architecture principles**, ensuring maintainability
 
 * Customers can create service requests
 * Includes title, description, category, and location
+* Customers can track ticket progress
 
 ---
 
@@ -85,8 +90,16 @@ This project follows **Clean Architecture principles**, ensuring maintainability
 * View available (unassigned) tickets
 * Accept tickets
 * Update ticket status
+* Manage assigned tasks
 
 ---
+
+### 💬 Chat System
+* Real-time-style messaging between customers and technicians using SignalR
+* Separate chat interface for both roles
+* Ticket-based communication
+* Message timestamps and conversation history
+* Secure access control to prevent unauthorized chat access
 
 ### 🔁 Ticket Lifecycle
 
@@ -102,7 +115,8 @@ Unassigned → Assigned → In Progress → Completed
 2. Ticket is marked as **Unassigned**
 3. Technician logs in and accepts the ticket → **Assigned**
 4. Technician starts work → **In Progress**
-5. Task completed → **Completed**
+5. Customer and technician communicate through chat
+6. Task completed → **Completed**
 
 ---
 
@@ -132,9 +146,10 @@ The application will start locally and can be accessed via the browser.
 ## 🧩 Future Improvements
 
 * Distributed caching using Redis for performance optimization
-* Real-time updates (SignalR)
 * Notification system (email or in-app)
+* File/image attachments in chat
 * Advanced filtering & search
+* Rating & review system for technicians
 
 ---
 
@@ -146,6 +161,8 @@ The application will start locally and can be accessed via the browser.
 * State management in Blazor
 * Real-world workflow modeling
 * Scalable service-layer design
+* Role-based feature management
+* Chat and communication workflow handling
 
 ---
 

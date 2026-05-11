@@ -9,6 +9,7 @@ namespace FixItNow.Application
             services.AddScoped<ITicketService, TicketService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IJwtService, JwtService>();
+            services.AddScoped<AuthenticatedHttpService>();
             return services;
         }
     }

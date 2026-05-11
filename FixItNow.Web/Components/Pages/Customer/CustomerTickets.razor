@@ -1,12 +1,11 @@
 ﻿@page "/customer-tickets"
 
-@using FixItNow.Domain.Models.Tickets
-@using MudBlazor
-
 @inject HttpClient Http
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject AuthenticatedHttpService AuthenticatedHttpService
+@inject TicketApiService TicketApiService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
@@ -20,6 +19,9 @@
     }
     else if (tickets.Count == 0)
     {
+        <MudText>@errorMessage</MudText>
+
+        <MudText>Ticket count: @tickets.Count</MudText>
         <MudAlert Severity="Severity.Info">
             You haven’t created any tickets yet.
         </MudAlert>
@@ -106,62 +108,60 @@
 </MudContainer>
 
 @code {
-    private List<CustomerTicketResponse> tickets;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadTickets();
-    }
+    private List<CustomerTicketResponse> tickets = [];
 
-    private async Task<string> GetToken()
-    {
-        var token = await LocalStorage.GetAsync<string>("token");
-        return token.Success ? token.Value : null;
-    }
+    private bool isLoading = true;
 
-    private async Task LoadTickets()
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var token = await GetToken();
-        if (token == null)
-        {
-            tickets = new();
+        if (!firstRender)
             return;
-        }
 
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "https://localhost:7008/api/tickets/customer-tickets");
+        await LoadTicketsAsync();
 
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        StateHasChanged();
+    }
 
-        var response = await Http.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
+    private async Task LoadTicketsAsync()
+    {
+        try
         {
-            tickets = await response.Content
-                .ReadFromJsonAsync<List<CustomerTicketResponse>>();
+            isLoading = true;
+
+            tickets =
+                await TicketApiService.GetCustomerTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
-    private void ViewDetails(int id)
-    {
-        NavigationManager.NavigateTo($"/ticket/{id}");
-    }
+    private void ViewDetails(int ticketId) =>
+        NavigationManager.NavigateTo(
+            $"/ticket/{ticketId}");
 
-    private void OpenChat(int ticketId)
-    {
-        NavigationManager.NavigateTo($"/chat/{ticketId}");
-    }
+    private void OpenChat(int ticketId) =>
+        NavigationManager.NavigateTo(
+            $"/chat/{ticketId}");
 
-    private string Shorten(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return "";
-        return text.Length > 80 ? text.Substring(0, 80) + "..." : text;
-    }
+    private static string Shorten(string? text) =>
+        string.IsNullOrWhiteSpace(text)
+            ? string.Empty
+            : text.Length <= 80
+                ? text
+                : $"{text[..80]}...";
 
-    private Color GetStatusColor(TicketStatus status)
-    {
-        return status switch
+    private static Color GetStatusColor(
+        TicketStatus status) =>
+        status switch
         {
             TicketStatus.Unassigned => Color.Default,
             TicketStatus.Assigned => Color.Info,
@@ -169,5 +169,4 @@
             TicketStatus.Completed => Color.Success,
             _ => Color.Default
         };
-    }
 }

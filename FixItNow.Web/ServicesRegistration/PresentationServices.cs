@@ -1,5 +1,5 @@
-﻿using FixItNow.Application;
-using FixItNow.Application.Services;
+﻿using FixItNow.Application.Services;
+using FixItNow.Web.Components.API_Services;
 using FixItNow.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -16,9 +16,15 @@ namespace FixItNow.Presentation
             services.AddScoped<ProtectedLocalStorage>();
             services.AddScoped<AppState>();
             services.AddScoped<IChatService, ChatService>();
+            services.AddScoped<TicketApiService>();
+            services.AddScoped(sp =>
+            new HttpClient
+            {
+                BaseAddress = new Uri("https://localhost:7008/")
+            });
 
             services.AddMudServices();
-            
+
 
             return services;
         }

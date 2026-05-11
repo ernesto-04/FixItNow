@@ -1,11 +1,9 @@
 ﻿@page "/technician-tickets"
 
-@using MudBlazor
-@using FixItNow.Domain.Models.Tickets
-
 @inject HttpClient Http
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager NavigationManager
+@inject TicketApiService TicketApiService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
@@ -134,82 +132,99 @@
 </MudContainer>
 
 @code {
-    private List<TechnicianTicketResponse> tickets;
 
-    protected override async Task OnInitializedAsync()
+    private List<TechnicianTicketResponse> tickets = [];
+
+    private bool isLoading = true;
+
+    private bool isUpdating;
+
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadTickets();
+        if (!firstRender)
+            return;
+
+        await LoadTicketsAsync();
+
+        StateHasChanged();
     }
 
-    private async Task<string> GetToken()
+    private async Task LoadTicketsAsync()
     {
-        var token = await LocalStorage.GetAsync<string>("token");
-        return token.Success ? token.Value : null;
-    }
-
-    private async Task LoadTickets()
-    {
-        var token = await GetToken();
-        if (token == null) return;
-
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "https://localhost:7008/api/tickets/technician-tickets");
-
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var response = await Http.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            tickets = await response.Content
-                .ReadFromJsonAsync<List<TechnicianTicketResponse>>();
+            isLoading = true;
+
+            tickets =
+                await TicketApiService.GetTechnicianTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
-    private async Task UpdateStatus(int ticketId, TicketStatus status)
+    private async Task UpdateStatus(
+        int ticketId,
+        TicketStatus status)
     {
-        var token = await GetToken();
-        if (token == null) return;
-
-        var request = new HttpRequestMessage(HttpMethod.Put,
-            $"https://localhost:7008/api/tickets/{ticketId}/status?status={status}");
-
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var response = await Http.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            await LoadTickets();
+            isUpdating = true;
+
+            var success =
+                await TicketApiService.UpdateTicketStatusAsync(
+                    ticketId,
+                    status);
+
+            if (!success)
+            {
+                errorMessage =
+                    "Failed to update ticket status.";
+
+                return;
+            }
+
+            await LoadTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isUpdating = false;
         }
     }
 
-    private void GoToDetail(int id)
-    {
-        NavigationManager.NavigateTo($"/technician-tickets/{id}");
-    }
+    private void GoToDetail(int ticketId) =>
+        NavigationManager.NavigateTo(
+            $"/technician-tickets/{ticketId}");
 
-    private void OpenChat(int ticketId)
-    {
-        NavigationManager.NavigateTo($"/chat/{ticketId}");
-    }
+    private void OpenChat(int ticketId) =>
+        NavigationManager.NavigateTo(
+            $"/chat/{ticketId}");
 
-    private string Shorten(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return "";
-        return text.Length > 80 ? text.Substring(0, 80) + "..." : text;
-    }
+    private static string Shorten(string? text) =>
+        string.IsNullOrWhiteSpace(text)
+            ? string.Empty
+            : text.Length <= 80
+                ? text
+                : $"{text[..80]}...";
 
-    private Color GetStatusColor(TicketStatus status)
-    {
-        return status switch
+    private static Color GetStatusColor(
+        TicketStatus status) =>
+        status switch
         {
             TicketStatus.Assigned => Color.Info,
             TicketStatus.InProgress => Color.Warning,
             TicketStatus.Completed => Color.Success,
             _ => Color.Default
         };
-    }
 }

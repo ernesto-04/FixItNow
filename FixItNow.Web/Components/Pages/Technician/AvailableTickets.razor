@@ -1,11 +1,10 @@
 ﻿@page "/available-tickets"
 
-@using MudBlazor
-@using FixItNow.Domain.Models.Tickets
-
 @inject HttpClient Http
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager NavigationManager
+@inject AuthenticatedHttpService AuthenticatedHttpService
+@inject TicketApiService TicketApiService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
@@ -94,64 +93,93 @@
 </MudContainer>
 
 @code {
-    private List<AvailableTicketResponse> tickets;
+    private List<AvailableTicketResponse> tickets = [];
 
-    protected override async Task OnInitializedAsync()
+    private bool isLoading = true;
+
+    private bool isUpdating;
+
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadTickets();
+        if (!firstRender)
+            return;
+
+        await LoadTicketsAsync();
+
+        StateHasChanged();
     }
 
-    private async Task<string> GetToken()
+    private async Task LoadTicketsAsync()
     {
-        var token = await LocalStorage.GetAsync<string>("token");
-        return token.Success ? token.Value : null;
-    }
-
-    private async Task LoadTickets()
-    {
-        var token = await GetToken();
-        if (token == null) return;
-
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "https://localhost:7008/api/tickets/available-tickets");
-
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var response = await Http.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            tickets = await response.Content
-                .ReadFromJsonAsync<List<AvailableTicketResponse>>();
+            isLoading = true;
+
+            tickets =
+                await TicketApiService.GetAvailableTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
-    private async Task UpdateStatus(int ticketId, TicketStatus newStatus)
+    private async Task UpdateStatus(
+        int ticketId,
+        TicketStatus newStatus)
     {
-        var token = await GetToken();
-        if (token == null) return;
+        try
+        {
+            isUpdating = true;
 
-        var request = new HttpRequestMessage(HttpMethod.Put,
-            $"https://localhost:7008/api/tickets/{ticketId}/status?status={newStatus}");
+            var client =
+                await AuthenticatedHttpService.GetClientAsync();
 
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            if (client is null)
+            {
+                errorMessage = "Authentication failed.";
+                return;
+            }
 
-        await Http.SendAsync(request);
+            var response = await client.PutAsync(
+                $"api/tickets/{ticketId}/status?status={newStatus}",
+                null);
 
-        await LoadTickets();
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage =
+                    $"Failed to update status ({(int)response.StatusCode})";
+
+                return;
+            }
+
+            await LoadTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isUpdating = false;
+        }
     }
 
-    private string Shorten(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return "";
-        return text.Length > 80 ? text.Substring(0, 80) + "..." : text;
-    }
+    private static string Shorten(string? text) =>
+        string.IsNullOrWhiteSpace(text)
+            ? string.Empty
+            : text.Length <= 80
+                ? text
+                : $"{text[..80]}...";
 
-    private Color GetStatusColor(string status)
-    {
-        return status switch
+    private static Color GetStatusColor(string? status) =>
+        status switch
         {
             "Unassigned" => Color.Default,
             "Assigned" => Color.Info,
@@ -160,10 +188,8 @@
             "Completed" => Color.Success,
             _ => Color.Default
         };
-    }
 
-    private void GoToDetail(int id)
-    {
-        NavigationManager.NavigateTo($"/available-tickets/{id}");
-    }
+    private void GoToDetail(int ticketId) =>
+        NavigationManager.NavigateTo(
+            $"/available-tickets/{ticketId}");
 }

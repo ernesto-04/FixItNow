@@ -1,20 +1,25 @@
 ﻿@page "/ticket/{Id:int}"
 
-@using FixItNow.Domain.Models.Tickets
-@using MudBlazor
-
 @inject HttpClient Http
 @inject ProtectedLocalStorage LocalStorage
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject AuthenticatedHttpService AuthenticatedHttpService
+@inject TicketApiService TicketApiService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
-    @if (ticket == null)
+    @if (isLoading)
     {
         <MudProgressCircular Indeterminate="true" />
     }
-    else
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">
+            @errorMessage
+        </MudAlert>
+    }
+    else if(ticket is not null)
     {
         <!-- TITLE -->
         <MudText Typo="Typo.h4" Class="mb-2">
@@ -112,7 +117,7 @@
                     @if (ticket.Status == TicketStatus.Assigned || ticket.Status == TicketStatus.InProgress)
                     {
                         <TicketChat TicketId="@ticket.Id"
-                                    CurrentUserId="@CurrentUserId"
+                                    CurrentUserId="@currentUserId"
                                     TechnicianId="@ticket.AssignedTechnicianId" />
                     }
 
@@ -142,52 +147,66 @@
 </MudContainer>
 
 @code {
-    [Parameter] public int Id { get; set; }
 
-    private CustomerTicketResponse ticket;
-    private int CurrentUserId;
+    [Parameter]
+    public int Id { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    private CustomerTicketResponse? ticket;
+
+    private int currentUserId;
+
+    private bool isLoading = true;
+
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var userResult = await LocalStorage.GetAsync<int>("userId");
+        if (!firstRender)
+            return;
 
-        if (userResult.Success)
-        {
-            CurrentUserId = userResult.Value;
-        }
+        await LoadCurrentUserAsync();
+        await LoadTicketAsync();
 
-        await LoadTicket();
+        StateHasChanged();
     }
 
-    private async Task<string> GetToken()
+    private async Task LoadCurrentUserAsync()
     {
-        var token = await LocalStorage.GetAsync<string>("token");
-        return token.Success ? token.Value : null;
-    }
+        var result =
+            await LocalStorage.GetAsync<int>("userId");
 
-    private async Task LoadTicket()
-    {
-        var token = await GetToken();
-        if (token == null) return;
-
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            $"https://localhost:7008/api/tickets/{Id}");
-
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var response = await Http.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
+        if (result.Success)
         {
-            ticket = await response.Content
-                .ReadFromJsonAsync<CustomerTicketResponse>();
+            currentUserId = result.Value;
         }
     }
 
-    private Color GetStatusColor(TicketStatus status)
+    private async Task LoadTicketAsync()
     {
-        return status switch
+        try
+        {
+            isLoading = true;
+
+            ticket = await TicketApiService.GetTicketByIdAsync(Id);
+
+            if (ticket is null)
+            {
+                errorMessage = "Ticket not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static Color GetStatusColor(
+        TicketStatus status) =>
+        status switch
         {
             TicketStatus.Unassigned => Color.Default,
             TicketStatus.Assigned => Color.Info,
@@ -195,5 +214,4 @@
             TicketStatus.Completed => Color.Success,
             _ => Color.Default
         };
-    }
 }

@@ -2,11 +2,13 @@
 
 ## 📌 Overview
 
-FixItNow is a web-based service marketplace platform that connects customers with technicians for on-demand issue resolution.
+FixItNow is a full-stack web-based service marketplace platform that connects customers with technicians for on-demand issue resolution.
 
-The platform allows customers to create service requests, while technicians can browse, accept, manage, and complete tasks through a structured workflow. The system also supports real-time-style communication between customers and technicians through an integrated chat feature.
+The platform allows customers to create service requests, while technicians can browse, accept, manage, and complete tasks through a structured workflow. The system also supports real-time communication between customers and technicians using SignalR.
 
-This project focuses on clean architecture, scalable backend design, and clear separation of concerns.
+This project focuses on clean architecture, scalable backend design, real-world workflow implementation, and cloud deployment using Microsoft Azure.
+
+🌐 Live Demo: https://your-azure-app.azurewebsites.net
 
 ---
 
@@ -31,39 +33,54 @@ There is a need for a centralized platform to:
 * Connect customers with available technicians
 * Standardize the service request process
 * Improve visibility and tracking of tasks
-
+* Provide a more structured communication workflow
 
 ---
 
 ## 🏗️ Architecture
 
-This project follows **Clean Architecture principles**, ensuring maintainability and scalability.
+This project follows **Clean Architecture principles**, ensuring maintainability, scalability, and separation of concerns.
 
-```
-/Presentation Layer   → Blazor UI (Client-side)
+```text
+/Presentation Layer   → Blazor WebAssembly UI
 /Application Layer    → Business logic & use cases
 /Domain Layer         → Core entities & models
-/Infrastructure Layer → Data access & external services
+/Infrastructure Layer → Database & external services
 ```
 
 ### Key Design Decisions
 
-* Separation of concerns between layers
-* Dependency injection for service management
-* Service layer abstraction for business logic
-* Async-first approach for scalability
+* Clean separation between layers
+* Dependency Injection for service management
+* Service abstraction for maintainability
+* Async-first architecture for scalability
 * Role-based authorization for secure access
-* Modular feature organization for maintainability
+* Modular feature organization
+* Environment-based configuration for deployment
 
 ---
 
 ## ⚙️ Tech Stack
 
-* **Backend:** .NET 8 (C#)
-* **Frontend:** Blazor WebAssembly
-* **Database:** PostgreSQL (or In-Memory for demo)
-* **Authentication:** JWT (JSON Web Token)
-* **UI Library:** MudBlazor
+### Backend
+* ASP.NET Core Web API (.NET 8)
+* Entity Framework Core
+* SignalR
+
+### Frontend
+* Blazor WebAssembly
+* MudBlazor
+
+### Database
+* PostgreSQL
+
+### Authentication & Security
+* JWT Authentication
+* Role-Based Authorization
+
+### Cloud & DevOps
+* Microsoft Azure App Service
+* Azure PostgreSQL Flexible Server
 
 ---
 
@@ -71,9 +88,10 @@ This project follows **Clean Architecture principles**, ensuring maintainability
 
 ### 🔐 Authentication & Authorization
 
-* Secure authentication using JWT
+* Secure JWT-based authentication
 * Role-based access control (Customer & Technician)
 * Protected API endpoints
+* Secure SignalR communication
 
 ---
 
@@ -81,42 +99,62 @@ This project follows **Clean Architecture principles**, ensuring maintainability
 
 * Customers can create service requests
 * Includes title, description, category, and location
-* Customers can track ticket progress
+* Ticket status tracking
+* Structured ticket workflow lifecycle
 
 ---
 
 ### 👨‍🔧 Technician Workflow
 
-* View available (unassigned) tickets
-* Accept tickets
-* Update ticket status
-* Manage assigned tasks
+* Browse available (unassigned) tickets
+* Accept and manage assigned tickets
+* Update work progress
+* Complete assigned tasks
 
 ---
 
-### 💬 Chat System
-* Real-time-style messaging between customers and technicians using SignalR
-* Separate chat interface for both roles
-* Ticket-based communication
-* Message timestamps and conversation history
-* Secure access control to prevent unauthorized chat access
+### 💬 Real-Time Chat System
+
+* Real-time messaging using SignalR
+* Separate chat interface for customers and technicians
+* Ticket-based communication rooms
+* Conversation history & timestamps
+* Secure access validation for chat participants
+
+---
 
 ### 🔁 Ticket Lifecycle
 
-```
+```text
 Unassigned → Assigned → In Progress → Completed
 ```
 
 ---
 
-## 📊 System Flow
+## 📊 System Workflow
 
-1. Customer logs in and creates a ticket
-2. Ticket is marked as **Unassigned**
-3. Technician logs in and accepts the ticket → **Assigned**
-4. Technician starts work → **In Progress**
-5. Customer and technician communicate through chat
-6. Task completed → **Completed**
+1. Customer logs in and creates a service ticket
+2. Ticket status becomes **Unassigned**
+3. Technician browses available tickets
+4. Technician accepts ticket → **Assigned**
+5. Technician updates progress → **In Progress**
+6. Customer and technician communicate in real time
+7. Task completed → **Completed**
+
+---
+
+## 🚀 Live Deployment
+
+FixItNow is deployed publicly using Microsoft Azure.
+
+### Cloud Infrastructure
+
+* Azure App Service
+* Azure PostgreSQL Database
+* HTTPS-enabled deployment
+* Environment-based configuration management
+
+🌐 Live Website: https://your-azure-app.azurewebsites.net
 
 ---
 
@@ -124,54 +162,71 @@ Unassigned → Assigned → In Progress → Completed
 
 ### Prerequisites
 
-* .NET 8 SDK installed
+* .NET 8 SDK
+* PostgreSQL
 
-### Run the project
+---
+
+### Run Locally
 
 ```bash
 dotnet run
 ```
 
-The application will start locally and can be accessed via the browser.
+---
+
+### Environment Configuration
+
+The project supports multiple environments:
+
+* Development → Local PostgreSQL
+* Production → Azure PostgreSQL
+
+Environment variables are used for secure production configuration.
 
 ---
 
 ## 🧪 Demo Notes
 
-* This project uses **mock or development data** for demonstration
-* No real user data is included
+* This project uses development/demo data
+* No real customer data is included
+* Built primarily for learning and portfolio purposes
 
 ---
 
 ## 🧩 Future Improvements
 
-* Distributed caching using Redis for performance optimization
-* Notification system (email or in-app)
+* Notification system (real-time & email)
 * File/image attachments in chat
+* Technician rating & review system
 * Advanced filtering & search
-* Rating & review system for technicians
+* Pagination & performance optimization
+* Redis caching
+* Admin dashboard & analytics
 
 ---
 
 ## 📚 What This Project Demonstrates
 
 * Clean Architecture implementation
-* RESTful API design
-* JWT-based authentication & authorization
-* State management in Blazor
-* Real-world workflow modeling
-* Scalable service-layer design
-* Role-based feature management
-* Chat and communication workflow handling
+* RESTful API development
+* JWT authentication & authorization
+* Real-time communication using SignalR
+* Blazor WebAssembly frontend development
+* PostgreSQL integration with Entity Framework Core
+* Azure cloud deployment
+* Role-based workflow management
+* Real-world service marketplace modeling
+* Scalable backend structure & maintainability
 
 ---
 
 ## ⚠️ Disclaimer
 
-This project is built for demonstration purposes. All data is synthetic and does not represent any real users or organizations.
+This project was built for educational and portfolio purposes. All data shown is synthetic and does not represent real users or organizations.
 
 ---
 
 ## 👤 Author
 
-Developed as part of a personal portfolio to demonstrate full-stack engineering capabilities using .NET technologies.
+Developed by Ernesto as a personal full-stack portfolio project using modern .NET technologies.

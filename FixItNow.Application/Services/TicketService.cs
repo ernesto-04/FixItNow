@@ -15,9 +15,10 @@ namespace FixItNow.Application.Services
         List<TechnicianTicketResponse> GetTechnicianTickets(int userId);
         void AcceptTicket(int ticketId, int technicianUserId);
         void UpdateStatus(int ticketId, int userId, TicketStatus newStatus);
-        Task<TicketChatResponse?> GetTicketByIdAsync(int ticketId, int userId);
+        Task<TicketChatResponse?> GetTicketChatAsync(int ticketId, int userId);
         Task<AvailableTicketResponse?> GetTicketForTechnicianAsync(int ticketId, int userId);
         Task<TechnicianTicketResponse?> GetTechnicianTicketDetailAsync(int ticketId, int userId);
+        Task<CustomerTicketResponse?> GetCustomerTicketDetailAsync(int ticketId, int userId);
     }
 
     public class TicketService : ITicketService
@@ -94,31 +95,6 @@ namespace FixItNow.Application.Services
             };
         }
 
-        public List<AvailableTicketResponse> GetAvailableTickets(int currentUserId)
-        {
-            var baseUrl = _config["AppSettings:BaseUrl"];
-            return _context.Tickets
-                .Include(t => t.Images)
-                .Where(t =>
-            t.Status == TicketStatus.Unassigned
-            && t.CustomerId != currentUserId
-        )
-                .Select(t => new AvailableTicketResponse
-                {
-                    Id = t.Id,
-                    Title = t.Title,
-                    Category = t.Category,
-                    Description = t.Description,
-                    Location = t.Location,
-                    TechnicianName = null,
-                    Status = t.Status,
-                    ImageUrls = t.Images
-                        .Select(i => $"{baseUrl}{i.ImageUrl}")
-                        .ToList()
-                })
-                .ToList();
-        }
-
         public List<CustomerTicketResponse> GetCustomerTickets(int userId)
         {
             var baseUrl = _config["AppSettings:BaseUrl"];
@@ -140,7 +116,60 @@ namespace FixItNow.Application.Services
                     AssignedTechnicianId = t.AssignedTechnicianId,
                     CustomerId = t.CustomerId,
                     ImageUrls = t.Images
-                        .Select(i => $"{baseUrl}{i.ImageUrl}")
+                        .Select(i => $"{_config[baseUrl]}{i.ImageUrl}")
+                        .ToList()
+                })
+                .ToList();
+        }
+
+        public async Task<AvailableTicketResponse?> GetTicketForTechnicianAsync(int ticketId, int userId)
+        {
+            var baseUrl = _config["AppSettings:BaseUrl"];
+
+            var ticket = await _context.Tickets
+                .Include(t => t.Images)
+                .Include(t => t.Customer)
+                .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+            if (ticket == null)
+                return null;
+
+            return new AvailableTicketResponse
+            {
+                Id = ticket.Id,
+                Title = ticket.Title,
+                Description = ticket.Description,
+                Category = ticket.Category,
+                Location = ticket.Location,
+                Status = ticket.Status,
+                CreatedAt = ticket.CreatedAt,
+                CustomerName = ticket.Customer.Username,
+                ImageUrls = ticket.Images
+                .Select(i => $"{_config[baseUrl]}{i.ImageUrl}")
+                .ToList()
+            };
+        }
+
+        public List<AvailableTicketResponse> GetAvailableTickets(int currentUserId)
+        {
+            var baseUrl = _config["AppSettings:BaseUrl"];
+            return _context.Tickets
+                .Include(t => t.Images)
+                .Where(t =>
+            t.Status == TicketStatus.Unassigned
+            && t.CustomerId != currentUserId
+        )
+                .Select(t => new AvailableTicketResponse
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Category = t.Category,
+                    Description = t.Description,
+                    Location = t.Location,
+                    TechnicianName = null,
+                    Status = t.Status,
+                    ImageUrls = t.Images
+                        .Select(i => $"{_config[baseUrl]}{i.ImageUrl}")
                         .ToList()
                 })
                 .ToList();
@@ -165,10 +194,36 @@ namespace FixItNow.Application.Services
                     CustomerId = t.CustomerId,
                     AssignedTechnicianId = t.AssignedTechnicianId,
                     ImageUrls = t.Images
-                        .Select(i => $"{baseUrl}{i.ImageUrl}")
+                        .Select(i => $"{_config[baseUrl]}{i.ImageUrl}")
                         .ToList()
                 })
                 .ToList();
+        }
+
+        public async Task<TechnicianTicketResponse?> GetTechnicianTicketDetailAsync(int ticketId, int userId)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.Images)
+                .Include(t => t.Customer)
+                .FirstOrDefaultAsync(t =>
+                    t.Id == ticketId &&
+                    t.AssignedTechnicianId == userId);
+
+            if (ticket == null)
+                return null;
+
+            return new TechnicianTicketResponse
+            {
+                Id = ticket.Id,
+                Title = ticket.Title,
+                Description = ticket.Description,
+                Category = ticket.Category,
+                Location = ticket.Location,
+                Status = ticket.Status,
+                CreatedAt = ticket.CreatedAt,
+                CustomerName = ticket.Customer.Username,
+                ImageUrls = ticket.Images.Select(i => i.ImageUrl).ToList()
+            };
         }
 
         public void AcceptTicket(int ticketId, int technicianUserId)
@@ -220,7 +275,7 @@ namespace FixItNow.Application.Services
             _context.SaveChanges();
         }
 
-        public async Task<TicketChatResponse?> GetTicketByIdAsync(int ticketId, int userId)
+        public async Task<TicketChatResponse?> GetTicketChatAsync(int ticketId, int userId)
         {
             var ticket = await _context.Tickets
                 .Include(t => t.Images)
@@ -260,52 +315,53 @@ namespace FixItNow.Application.Services
         : ticket.CustomerId
             };
         }
-        public async Task<AvailableTicketResponse?> GetTicketForTechnicianAsync(int ticketId, int userId)
+        
+        public async Task<CustomerTicketResponse?> GetCustomerTicketDetailAsync(
+    int ticketId,
+    int userId)
         {
+            var baseUrl = _config["AppSettings:BaseUrl"];
+
             var ticket = await _context.Tickets
                 .Include(t => t.Images)
-                .Include(t => t.Customer)
-                .FirstOrDefaultAsync(t => t.Id == ticketId);
-
-            if (ticket == null)
-                return null;
-
-            return new AvailableTicketResponse
-            {
-                Id = ticket.Id,
-                Title = ticket.Title,
-                Description = ticket.Description,
-                Category = ticket.Category,
-                Location = ticket.Location,
-                Status = ticket.Status,
-                CreatedAt = ticket.CreatedAt,
-                CustomerName = ticket.Customer.Username,
-                ImageUrls = ticket.Images.Select(i => i.ImageUrl).ToList()
-            };
-        }
-        public async Task<TechnicianTicketResponse?> GetTechnicianTicketDetailAsync(int ticketId, int userId)
-        {
-            var ticket = await _context.Tickets
-                .Include(t => t.Images)
-                .Include(t => t.Customer)
+                .Include(t => t.AssignedTechnician)
                 .FirstOrDefaultAsync(t =>
                     t.Id == ticketId &&
-                    t.AssignedTechnicianId == userId);
+                    (
+                        t.CustomerId == userId ||
+                        t.AssignedTechnicianId == userId
+                    ));
 
             if (ticket == null)
                 return null;
 
-            return new TechnicianTicketResponse
+            return new CustomerTicketResponse
             {
                 Id = ticket.Id,
+
                 Title = ticket.Title,
+
                 Description = ticket.Description,
+
                 Category = ticket.Category,
+
                 Location = ticket.Location,
+
                 Status = ticket.Status,
+
+                TechnicianName =
+                    ticket.AssignedTechnician?.Email,
+
+                AssignedTechnicianId =
+                    ticket.AssignedTechnicianId,
+
+                CustomerId = ticket.CustomerId,
+
                 CreatedAt = ticket.CreatedAt,
-                CustomerName = ticket.Customer.Username,
-                ImageUrls = ticket.Images.Select(i => i.ImageUrl).ToList()
+
+                ImageUrls = ticket.Images
+                    .Select(i => $"{_config[baseUrl]}{i.ImageUrl}")
+                    .ToList()
             };
         }
     }

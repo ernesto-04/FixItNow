@@ -1,4 +1,6 @@
-﻿<MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+﻿@inject AppState AppState
+
+<MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
     <ActivatorContent>
         <MudAvatar Color="Color.Inherit">
             <MudIcon Icon="@Icons.Material.Filled.AccountCircle" />
@@ -35,9 +37,12 @@
         }
     }
 
-    private void OnLogoutClicked()
+    private async Task OnLogoutClicked()
     {
-        ((CustomAuthStateProvider)AuthProvider).EndSession();
+        await ((CustomAuthStateProvider)AuthProvider).EndSession();
+
+        AppState.SetMode("customer");
+
         Nav.NavigateTo("/", true);
     }
 }

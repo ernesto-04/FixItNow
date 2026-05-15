@@ -51,10 +51,13 @@ namespace FixItNow.Web.Services
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
-        public void EndSession()
+        public async Task EndSession()
         {
-            var state = ClearSession();
-            NotifyAuthenticationStateChanged(state);
+            var state = await ClearSession();
+
+            await _protectedLocalStorage.DeleteAsync("mode");
+
+            NotifyAuthenticationStateChanged(Task.FromResult(state));
         }
 
         private async Task<AuthenticationState> ClearSession()

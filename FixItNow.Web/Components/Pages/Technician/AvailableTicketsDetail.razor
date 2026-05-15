@@ -217,8 +217,7 @@
                 errorMessage = "Failed to accept ticket.";
                 return;
             }
-
-            await LoadTicketAsync();
+            NavigationManager.NavigateTo("/available-tickets");
         }
         catch (Exception ex)
         {

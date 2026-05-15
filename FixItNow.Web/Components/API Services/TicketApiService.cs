@@ -98,7 +98,7 @@ namespace FixItNow.Web.Components.API_Services
                 .ReadFromJsonAsync<List<CustomerTicketResponse>>()
                 ?? [];
         }
-        public async Task<CustomerTicketResponse?> GetTicketByIdAsync(int ticketId)
+        public async Task<CustomerTicketResponse?> GetCustomerTicketAsync(int ticketId)
         {
             var client =
                 await _authService.GetClientAsync();

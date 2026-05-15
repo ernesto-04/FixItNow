@@ -1,6 +1,7 @@
 ﻿using FixItNow.Application.Services;
 using FixItNow.Web.Components.API_Services;
 using FixItNow.Web.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using MudBlazor.Services;
@@ -18,10 +19,11 @@ namespace FixItNow.Presentation
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<TicketApiService>();
             services.AddScoped(sp =>
-            new HttpClient
-            {
-                BaseAddress = new Uri("https://localhost:7008/")
-            });
+             new HttpClient
+             {
+                 BaseAddress = new Uri(
+                     sp.GetRequiredService<NavigationManager>().BaseUri)
+             });
 
             services.AddMudServices();
 

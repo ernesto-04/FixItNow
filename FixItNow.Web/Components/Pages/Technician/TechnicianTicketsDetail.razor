@@ -122,13 +122,6 @@
                                    OnClick="@(() => UpdateStatusAsync(ticket.Id, TicketStatus.Completed))">
                             Complete Job
                         </MudButton>
-
-                        <MudButton FullWidth="true"
-                                   Class="mt-2"
-                                   Variant="Variant.Outlined"
-                                   Color="Color.Info">
-                            Chat Customer
-                        </MudButton>
                     }
                     else if (ticket.Status == TicketStatus.Completed)
                     {

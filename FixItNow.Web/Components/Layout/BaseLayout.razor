@@ -151,13 +151,12 @@
 @code {
 
     private bool _drawerOpen = true;
-    private bool _isTechnician;
     private bool _showTechnicianPanel;
     private bool _isSubmitting;
+    private bool _isTechnician;
+    private bool _initialized;
 
-    private CreateTechnicianProfileRequest _request = new();
-
-    private bool _loaded;
+    private readonly CreateTechnicianProfileRequest _request = new();
 
     protected override void OnInitialized()
     {
@@ -166,27 +165,16 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_loaded)
-        {
-            _loaded = true;
+        if (!firstRender || _initialized)
+            return;
 
-            var result = await LocalStorage.GetAsync<string>("mode");
+        _initialized = true;
 
-            if (result.Success && !string.IsNullOrEmpty(result.Value))
-            {
-                AppState.SetMode(result.Value);
-            }
-            else
-            {
-                AppState.SetMode("customer");
+        AppState.SetMode("customer");
 
-                await LocalStorage.SetAsync("mode", "customer");
-            }
+        _isTechnician = await IsTechnician();
 
-            _isTechnician = await IsTechnician();
-
-            await InvokeAsync(StateHasChanged);
-        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private void Refresh()
@@ -205,8 +193,6 @@
         {
             AppState.SetMode("customer");
 
-            await LocalStorage.SetAsync("mode", "customer");
-
             NavigationManager.NavigateTo("/customer-tickets");
 
             return;
@@ -215,8 +201,6 @@
         if (_isTechnician)
         {
             AppState.SetMode("technician");
-
-            await LocalStorage.SetAsync("mode", "technician");
 
             NavigationManager.NavigateTo("/available-tickets");
         }
@@ -232,26 +216,24 @@
         {
             _isSubmitting = true;
 
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var authState =
+                await AuthStateProvider.GetAuthenticationStateAsync();
 
-            var user = authState.User;
-
-            var claim = user.FindFirst(ClaimTypes.NameIdentifier);
+            var claim = authState.User
+                .FindFirst(ClaimTypes.NameIdentifier);
 
             if (claim is null)
                 return;
 
-            var userId = int.Parse(claim.Value);
-
-            await UserService.BecomeTechnician(userId, _request);
+            await UserService.BecomeTechnician(
+                int.Parse(claim.Value),
+                _request);
 
             _isTechnician = true;
 
             _showTechnicianPanel = false;
 
             AppState.SetMode("technician");
-
-            await LocalStorage.SetAsync("mode", "technician");
 
             NavigationManager.NavigateTo("/available-tickets");
         }
@@ -274,7 +256,7 @@
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            "https://localhost:7008/api/users/is-technician");
+            "/api/users/is-technician");
 
         request.Headers.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue(

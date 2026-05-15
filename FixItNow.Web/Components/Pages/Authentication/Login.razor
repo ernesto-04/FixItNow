@@ -101,6 +101,7 @@
     @inject IAuthenticationService _authService;
     @inject NavigationManager NavigationManager;
     @inject AuthenticationStateProvider _authStateProvider;
+    @inject AppState AppState;
 
     [CascadingParameter]
     public HttpContext _httpcontext { get; set; } = default!;
@@ -163,6 +164,8 @@
 
             await ((CustomAuthStateProvider)_authStateProvider)
                 .StartSession(response.Token);
+
+            AppState.SetMode("customer");
 
             if (MudDialog is null)
             {

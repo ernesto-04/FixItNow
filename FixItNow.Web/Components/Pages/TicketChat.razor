@@ -8,6 +8,7 @@
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject ProtectedLocalStorage LocalStorage
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <MudContainer MaxWidth="MaxWidth.False"
               Class="pa-0 fill-height">
@@ -15,21 +16,17 @@
     <MudGrid Style="height:100vh;">
 
         <!-- LEFT SIDEBAR -->
-        <MudItem xs="12" md="3"
-                 Class="border-right">
+        <MudItem xs="12" md="3" Class="border-right">
 
             <MudPaper Class="pa-4 fill-height">
 
-                <MudText Typo="Typo.h6"
-                         Class="mb-4">
-
+                <MudText Typo="Typo.h6" Class="mb-4">
                     Messages
-
                 </MudText>
 
                 @if (ticket != null)
                 {
-                    <MudPaper Class="pa-3 cursor-pointer"
+                    <MudPaper Class="pa-3"
                               Elevation="1">
 
                         <MudText Typo="Typo.subtitle1">
@@ -37,7 +34,7 @@
                         </MudText>
 
                         <MudText Typo="Typo.caption">
-                            @ticket.TechnicianName
+                            @(ticket.TechnicianName ?? "User")
                         </MudText>
 
                     </MudPaper>
@@ -60,7 +57,7 @@
                     @if (ticket != null)
                     {
                         <MudText Typo="Typo.h6">
-                            @ticket.TechnicianName
+                            @(ticket.TechnicianName ?? "Chat")
                         </MudText>
 
                         <MudText Typo="Typo.caption">
@@ -76,15 +73,15 @@
 
                     @foreach (var msg in Messages)
                     {
-                        <div class="d-flex mb-3
-                                @(msg.SenderId == ticket.ReceiverId
-                                                             ? "justify-start"
-                                                             : "justify-end")">
+                        bool isMine =
+                            msg.SenderId == currentUserId;
 
-                        <MudPaper Class="pa-3"
-                                  Style="
-                                        max-width:70%;
-                                        border-radius:16px;">
+                        <div class="d-flex mb-3
+                            @(isMine
+                                ? "justify-end"
+                                : "justify-start")">
+
+                            <MudPaper Class="pa-3">
 
                                 <MudText Typo="Typo.body1">
                                     @msg.Message
@@ -97,7 +94,7 @@
                             </MudPaper>
 
                         </div>
-                                        }
+                    }
 
                 </div>
 
@@ -110,7 +107,8 @@
                         <MudTextField @bind-Value="MessageInput"
                                       Placeholder="Type a message..."
                                       FullWidth="true"
-                                      Variant="Variant.Outlined" />
+                                      Variant="Variant.Outlined"
+                                      Immediate="true" />
 
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
@@ -136,8 +134,6 @@
 
     [Parameter]
     public int TicketId { get; set; }
-    [Parameter]
-    public int AssignedTechnicianId { get; set; }
 
     private TicketChatResponse? ticket;
 
@@ -149,10 +145,12 @@
 
     private int ReceiverId;
 
+    private int currentUserId;
 
     private async Task<string?> GetToken()
     {
-        var token = await LocalStorage.GetAsync<string>("token");
+        var token =
+            await LocalStorage.GetAsync<string>("token");
 
         return token.Success
             ? token.Value
@@ -161,12 +159,21 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadCurrentUserAsync();
 
         var token = await GetToken();
 
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            NavigationManager.NavigateTo("/login");
+
+            return;
+        }
+
+        // LOAD TICKET
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"https://localhost:7008/api/tickets/{TicketId}"
+            $"/api/tickets/{TicketId}/chat"
         );
 
         request.Headers.Authorization =
@@ -195,11 +202,12 @@
         }
 
         ReceiverId = ticket.ReceiverId;
-        // Load Old Messages
+
+        // LOAD OLD MESSAGES
         var chatRequest = new HttpRequestMessage(
-        HttpMethod.Get,
-        $"https://localhost:7008/api/chat/ticket/{TicketId}"
-);
+            HttpMethod.Get,
+            $"/api/chat/ticket/{TicketId}"
+        );
 
         chatRequest.Headers.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue(
@@ -207,7 +215,8 @@
                 token
             );
 
-        var chatResponse = await Http.SendAsync(chatRequest);
+        var chatResponse =
+            await Http.SendAsync(chatRequest);
 
         if (chatResponse.IsSuccessStatusCode)
         {
@@ -221,10 +230,10 @@
             }
         }
 
-        // SignalR
+        // SIGNALR CONNECTION
         hubConnection = new HubConnectionBuilder()
             .WithUrl(
-                "https://localhost:7008/chatHub",
+                NavigationManager.ToAbsoluteUri("/chatHub"),
                 options =>
                 {
                     options.AccessTokenProvider = async () =>
@@ -266,13 +275,13 @@
         if (ReceiverId <= 0)
             return;
 
+        if (hubConnection == null)
+            return;
+
         var dto = new SendMessageDto
         {
-
             ReceiverId = ReceiverId,
-
             TicketId = TicketId,
-
             Message = MessageInput
         };
 
@@ -282,5 +291,32 @@
         );
 
         MessageInput = "";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    private async Task LoadCurrentUserAsync()
+    {
+        var authState =
+            await AuthenticationStateProvider
+                .GetAuthenticationStateAsync();
+
+        var user = authState.User;
+
+        var userIdClaim =
+            user.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier
+            )?.Value;
+
+        if (int.TryParse(userIdClaim, out var parsedId))
+        {
+            currentUserId = parsedId;
+        }
     }
 }

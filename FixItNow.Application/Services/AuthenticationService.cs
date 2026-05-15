@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using FixItNow.Domain.Models.Authentications;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.Extensions.Logging;
 
 namespace FixItNow.Application.Services
 {
@@ -15,93 +16,151 @@ namespace FixItNow.Application.Services
     {
         private readonly HttpClient _http;
         private readonly ProtectedLocalStorage _localStorage;
+        private readonly ILogger<AuthenticationService> _logger;
 
         public AuthenticationService(
             HttpClient http,
-            ProtectedLocalStorage localStorage)
+            ProtectedLocalStorage localStorage,
+            ILogger<AuthenticationService> logger)
         {
             _http = http;
             _localStorage = localStorage;
+            _logger = logger;
         }
 
         public async Task<AuthResponse> Login(AuthRequest model)
         {
-            // Validate empty fields
-            if (string.IsNullOrWhiteSpace(model.Email) ||
-                string.IsNullOrWhiteSpace(model.Password))
+            try
             {
-                throw new InvalidOperationException(
-                    "Email or Password is empty.");
+                if (string.IsNullOrWhiteSpace(model.Email) ||
+                    string.IsNullOrWhiteSpace(model.Password))
+                {
+                    throw new InvalidOperationException(
+                        "Email or Password is empty.");
+                }
+
+                var response = await _http.PostAsJsonAsync(
+                    "/api/auth/login",
+                    model);
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    _logger.LogWarning(
+                        "Failed login attempt for {Email}",
+                        model.Email);
+
+                    throw new InvalidOperationException(
+                        "Email or Password is invalid.");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+
+                    _logger.LogError(
+                        "Login API failed. Status: {StatusCode}, Error: {Error}",
+                        response.StatusCode,
+                        error);
+
+                    throw new InvalidOperationException(
+                        string.IsNullOrWhiteSpace(error)
+                            ? "Login failed."
+                            : error);
+                }
+
+                var result = await response.Content
+                    .ReadFromJsonAsync<AuthResponse>();
+
+                if (result == null)
+                {
+                    _logger.LogError(
+                        "Login returned null response for {Email}",
+                        model.Email);
+
+                    throw new InvalidOperationException(
+                        "Authentication failed.");
+                }
+
+                await _localStorage.SetAsync(
+                    "authToken",
+                    result.Token);
+
+                await _localStorage.SetAsync(
+                    "mode",
+                    "customer");
+
+                _logger.LogInformation(
+                    "User logged in successfully: {Email}",
+                    model.Email);
+
+                return result;
             }
-
-            var response = await _http.PostAsJsonAsync(
-                "https://localhost:7008/api/auth/login",
-                model);
-
-            // Handle unauthorized login
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException(
-                    "Email or Password is invalid.");
+                _logger.LogError(
+                    ex,
+                    "Exception occurred during login for {Email}",
+                    model.Email);
+
+                throw;
             }
-
-            // Handle other API errors
-            if (!response.IsSuccessStatusCode)
-            {
-                var error = await response.Content.ReadAsStringAsync();
-
-                throw new InvalidOperationException(
-                    string.IsNullOrWhiteSpace(error)
-                        ? "Login failed."
-                        : error);
-            }
-
-            var result = await response.Content
-                .ReadFromJsonAsync<AuthResponse>();
-
-            // Handle null response
-            if (result == null)
-            {
-                throw new InvalidOperationException(
-                    "Authentication failed.");
-            }
-
-            // Optional: save token to local storage
-            await _localStorage.SetAsync("authToken", result.Token);
-
-            return result;
         }
 
         public async Task Register(RegisterRequest model)
         {
-            // Validate empty fields
-            if (string.IsNullOrWhiteSpace(model.Email) ||
-                string.IsNullOrWhiteSpace(model.Password))
+            try
             {
-                throw new InvalidOperationException(
-                    "Email or Password is empty.");
+                if (string.IsNullOrWhiteSpace(model.Email) ||
+                    string.IsNullOrWhiteSpace(model.Password))
+                {
+                    throw new InvalidOperationException(
+                        "Email or Password is empty.");
+                }
+
+                var response = await _http.PostAsJsonAsync(
+                    "/api/auth/register",
+                    model);
+
+                if (response.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+
+                    _logger.LogWarning(
+                        "Registration failed for {Email}. Error: {Error}",
+                        model.Email,
+                        error);
+
+                    throw new InvalidOperationException(
+                        string.IsNullOrWhiteSpace(error)
+                            ? "Registration failed."
+                            : error);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+
+                    _logger.LogError(
+                        "Registration API failed. Status: {StatusCode}, Error: {Error}",
+                        response.StatusCode,
+                        error);
+
+                    throw new InvalidOperationException(
+                        "Something went wrong while registering.");
+                }
+
+                _logger.LogInformation(
+                    "User registered successfully: {Email}",
+                    model.Email);
             }
-
-            var response = await _http.PostAsJsonAsync(
-                "https://localhost:7008/api/auth/register",
-                model);
-
-            // Handle duplicate email/username
-            if (response.StatusCode == HttpStatusCode.BadRequest)
+            catch (Exception ex)
             {
-                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogError(
+                    ex,
+                    "Exception occurred during registration for {Email}",
+                    model.Email);
 
-                throw new InvalidOperationException(
-                    string.IsNullOrWhiteSpace(error)
-                        ? "Registration failed."
-                        : error);
-            }
-
-            // Handle other errors
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new InvalidOperationException(
-                    "Something went wrong while registering.");
+                throw;
             }
         }
     }

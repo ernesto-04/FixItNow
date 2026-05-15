@@ -1,9 +1,11 @@
+using System;
 using FixItNow.Application;
 using FixItNow.Infrastructure;
 using FixItNow.Infrastructure.Models.Commons;
 using FixItNow.Presentation;
 using FixItNow.Web.Components;
 using FixItNow.Web.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,11 +39,5 @@ app.MapRazorComponents<App>()
 app.MapControllers();
 
 app.MapHub<ChatHub>("/chathub");
-
-
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<FixItNowDataContext>();
-}
 
 app.Run();

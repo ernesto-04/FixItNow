@@ -113,14 +113,6 @@
                         @(ticket.TechnicianName ?? "Not assigned")
                     </MudText>
 
-                    <!-- ACTIONS -->
-                    @if (ticket.Status == TicketStatus.Assigned || ticket.Status == TicketStatus.InProgress)
-                    {
-                        <TicketChat TicketId="@ticket.Id"
-                                    CurrentUserId="@currentUserId"
-                                    TechnicianId="@ticket.AssignedTechnicianId" />
-                    }
-
                     @if (ticket.Status == TicketStatus.Completed)
                     {
                         <MudButton FullWidth="true"
@@ -187,7 +179,7 @@
         {
             isLoading = true;
 
-            ticket = await TicketApiService.GetTicketByIdAsync(Id);
+            ticket = await TicketApiService.GetCustomerTicketAsync(Id);
 
             if (ticket is null)
             {

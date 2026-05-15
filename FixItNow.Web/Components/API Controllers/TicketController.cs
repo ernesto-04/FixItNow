@@ -88,11 +88,11 @@ namespace FixItNow.Web
             return Ok();
         }
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetTicketById(int id)
+        public async Task<IActionResult> GetCustomerTicketDetail(int id)
         {
             var userId = GetUserId();
 
-            var ticket = await _ticketService.GetTicketByIdAsync(id, userId);
+            var ticket = await _ticketService.GetCustomerTicketDetailAsync(id, userId);
 
             if (ticket == null)
                 return NotFound();
@@ -122,6 +122,22 @@ namespace FixItNow.Web
                 return NotFound();
 
             return Ok(ticket);
+        }
+        [HttpGet("{ticketId}/chat")]
+        public async Task<IActionResult> GetTicketChat(
+    int ticketId)
+        {
+            var userId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
+
+            var result =
+                await _ticketService.GetTicketChatAsync(
+                    ticketId,
+                    userId
+                );
+
+            return Ok(result);
         }
         private int GetUserId()
         {

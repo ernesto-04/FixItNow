@@ -12,6 +12,22 @@ This project focuses on clean architecture, scalable backend design, real-world 
 
 ---
 
+## 🧪 Demo Accounts
+
+### Customer Account
+```text
+Email: customer@fixitnow.demo
+Password: Demo123!
+```
+
+### Technician Account
+```text
+Email: technician@fixitnow.demo
+Password: Demo123!
+```
+
+---
+
 ## 🧠 Problem Statement
 
 In Indonesia, finding reliable technicians (e.g., for home repairs or maintenance) is often difficult.

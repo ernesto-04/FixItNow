@@ -1,0 +1,370 @@
+﻿@page "/technicians"
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians
+@using FixItNow.Web.ApiServices
+
+@inject TechnicianApiService TechnicianApiService
+@inject NavigationManager NavigationManager
+
+<div>
+
+    @if (_isLoading)
+    {
+        <div style="display:flex; align-items:center; justify-content:center; min-height:60vh;">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <!-- PAGE HEADER -->
+        <div style="padding: 40px 48px 0;">
+            <h1 style="font-size:32px; font-weight:800; color:var(--text);
+                           letter-spacing:-0.8px; margin-bottom:6px;">
+                Browse Technicians
+            </h1>
+            <p style="font-size:15px; color:var(--muted); margin-bottom:32px;">
+                Find and book skilled professionals near you
+            </p>
+
+            <!-- CATEGORY PILLS — Fiverr style icon grid -->
+            <div style="display:flex; gap:12px; overflow-x:auto;
+                            padding-bottom:8px; scrollbar-width:none;
+                            border-bottom:1px solid var(--border);
+                            margin-bottom:0;">
+                @foreach (var cat in _categories)
+                {
+                    <div @onclick="@(() => SelectCategory(cat.Label))"
+                         style="display:flex; flex-direction:column; align-items:center;
+                                        gap:8px; padding:12px 16px; cursor:pointer;
+                                        white-space:nowrap; flex-shrink:0;
+                                        border-bottom: 2px solid @(_activeCategory == cat.Label ? "var(--text)" : "transparent");
+                                        transition: all .15s ease;
+                                        opacity: @(_activeCategory == cat.Label ? "1" : "0.65");">
+                        <span style="font-size:24px; line-height:1;">@cat.Icon</span>
+                        <span style="font-size:12px; font-weight:@(_activeCategory == cat.Label ? "700" : "500");
+                                             color:var(--text);">
+                            @cat.Label
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div style="padding: 24px 48px; background:#fff;
+                        border-bottom: 1px solid var(--border);
+                        position:sticky; top:72px; z-index:50;">
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+
+                <!-- SEARCH -->
+                <div style="display:flex; align-items:center; gap:8px;
+                                 background:#f5f5f5; border-radius:6px;
+                                 padding:10px 16px; flex:1; min-width:200px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                         viewBox="0 0 24 24" fill="none" stroke="#999"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text"
+                           placeholder="Search by name..."
+                           value="@_searchName"
+                           @oninput="@(e => { _searchName = e.Value?.ToString() ?? ""; ApplyFilters(); })"
+                           style="border:none; background:transparent; outline:none;
+                                      font-size:14px; color:var(--text); width:100%;
+                                      font-family:inherit;" />
+                </div>
+
+                <!-- SKILL FILTER -->
+                <div style="display:flex; align-items:center; gap:8px;
+                                 background:#f5f5f5; border-radius:6px;
+                                 padding:10px 16px; min-width:180px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                         viewBox="0 0 24 24" fill="none" stroke="#999"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                    </svg>
+                    <input type="text"
+                           placeholder="Filter by skill..."
+                           value="@_searchSkill"
+                           @oninput="@(e => { _searchSkill = e.Value?.ToString() ?? ""; ApplyFilters(); })"
+                           style="border:none; background:transparent; outline:none;
+                                      font-size:14px; color:var(--text); width:100%;
+                                      font-family:inherit;" />
+                </div>
+
+                <!-- LOCATION FILTER -->
+                <div style="display:flex; align-items:center; gap:8px;
+                                 background:#f5f5f5; border-radius:6px;
+                                 padding:10px 16px; min-width:180px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                         viewBox="0 0 24 24" fill="none" stroke="#999"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    <input type="text"
+                           placeholder="Filter by location..."
+                           value="@_searchLocation"
+                           @oninput="@(e => { _searchLocation = e.Value?.ToString() ?? ""; ApplyFilters(); })"
+                           style="border:none; background:transparent; outline:none;
+                                      font-size:14px; color:var(--text); width:100%;
+                                      font-family:inherit;" />
+                </div>
+
+                <!-- SORT -->
+                <select @bind="_sortBy"
+                        @bind:after="ApplyFilters"
+                        style="background:#f5f5f5; border:none; border-radius:6px;
+                                   padding:10px 16px; font-size:14px; color:var(--text);
+                                   font-family:inherit; cursor:pointer; outline:none;">
+                    <option value="default">Sort: Default</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="jobs">Most Jobs</option>
+                    <option value="experience">Most Experienced</option>
+                </select>
+
+                <!-- CLEAR -->
+                @if (_searchName != "" || _searchSkill != "" ||
+                            _searchLocation != "" || _minRating > 0 ||
+                            _activeCategory != "All")
+                {
+                    <button @onclick="ClearFilters"
+                            style="background:none; border:none; font-size:13px;
+                                           color:var(--muted); cursor:pointer; font-family:inherit;
+                                           padding:10px 8px; white-space:nowrap;">
+                        ✕ Clear
+                    </button>
+                }
+
+            </div>
+
+            <!-- RATING FILTER + RESULTS COUNT -->
+            <div style="display:flex; align-items:center;
+                            justify-content:space-between; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:13px; color:var(--muted); font-weight:500;">
+                        Min Rating:
+                    </span>
+                    <MudRating @bind-SelectedValue="_minRating"
+                               @bind-SelectedValue:after="ApplyFilters"
+                               Size="Size.Small" />
+                </div>
+                <span style="font-size:13px; color:var(--muted);">
+                    @_filtered.Count result@(_filtered.Count == 1 ? "" : "s")
+                </span>
+            </div>
+        </div>
+
+        <!-- RESULTS -->
+        <div style="padding: 32px 48px;">
+            @if (_filtered.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <div class="empty-state-title">No technicians found</div>
+                    <div class="empty-state-text">Try adjusting your filters</div>
+                </div>
+            }
+            else
+            {
+                <div class="tech-grid">
+                    @foreach (var tech in _filtered)
+                    {
+                        <div class="tech-card"
+                             @onclick="@(() => NavigationManager.NavigateTo($"/technicians/{tech.UserId}"))">
+
+                            <!-- CARD BANNER + AVATAR -->
+                            <div class="tech-card-header"></div>
+                            <div style="position:relative; padding:0 20px;">
+                                <div class="tech-card-avatar">
+                                    @if (!string.IsNullOrWhiteSpace(tech.ProfileImageUrl)
+                                                            && Uri.IsWellFormedUriString(
+                                                            tech.ProfileImageUrl, UriKind.Absolute))
+                                    {
+                                        <img src="@tech.ProfileImageUrl"
+                                             alt="@tech.FullName" />
+                                    }
+                                    else
+                                    {
+                                        @tech.FullName.FirstOrDefault()
+                                    }
+                            </div>
+                        </div>
+
+                        <!-- CARD BODY -->
+                        <div class="tech-card-body">
+
+                            <div class="tech-card-name">@tech.FullName</div>
+                            <div class="tech-card-location">📍 @tech.Location</div>
+
+                            <div class="tech-card-bio">@TextHelper.Shorten(tech.Bio)</div>
+
+                            <div style="font-size:14px; font-weight:700; color:var(--green-dark);
+                    margin-top:4px; margin-bottom:8px;">
+                                @TextHelper.FormatRate(tech.HourlyRate, tech.CallOutFee)
+                            </div>
+
+                            <div class="tech-card-skills">Skills</div>
+                            <div class="tech-card-skills-value">@tech.Skills</div>
+
+                            <div class="tech-card-divider"></div>
+
+                            <div class="tech-card-stats">
+                                <div>
+                                    <div class="tech-stat-label">Experience</div>
+                                    <div class="tech-stat-value">
+                                        @tech.YearsExperience yrs
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="tech-stat-label">Jobs Done</div>
+                                    <div class="tech-stat-value">
+                                        @tech.CompletedJobs
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="tech-stat-label">Rating</div>
+                                    <div class="tech-stat-value">
+                                        @(tech.AverageRating > 0
+                                                                        ? tech.AverageRating.ToString("0.0")
+                                                                        : "—")
+                                                                          </div>
+                                                                      </div>
+                                                                  </div>
+
+                        </div>
+
+                        <!-- CARD FOOTER -->
+                        <div class="tech-card-footer">
+                            <div class="tech-rating">
+                                <span class="tech-rating-star">★</span>
+                                <span>
+                                    @(tech.AverageRating > 0
+                                                                ? tech.AverageRating.ToString("0.0")
+                                                                : "New")
+                        </span>
+                        @if (tech.CompletedJobs > 0)
+                                    {
+                                        <span style="color:var(--muted); font-weight:400;">
+                                            (@tech.CompletedJobs jobs)
+                                        </span>
+                                    }
+                                </div>
+                                <button class="tech-view-btn">
+                                    View Profile →
+                                </button>
+                            </div>
+
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+@code {
+    private List<TechnicianProfileDto> _technicians = [];
+    private List<TechnicianProfileDto> _filtered = [];
+
+    private const string SortDefault = "default";
+    private const string SortRating = "rating";
+    private const string SortJobs = "jobs";
+    private const string SortExperience = "experience";
+
+    private string _searchName = string.Empty;
+    private string _searchSkill = string.Empty;
+    private string _searchLocation = string.Empty;
+    private string _sortBy = SortDefault;
+
+    private int _minRating;
+
+    private bool _isLoading = true;
+
+    private string _activeCategory = "All";
+
+    private readonly List<(string Icon, string Label)> _categories = new()
+    {
+        ("🔧", "All"),
+        ("🚿", "Plumbing"),
+        ("⚡", "Electrical"),
+        ("❄️", "AC Repair"),
+        ("🏠", "Renovation"),
+        ("🎨", "Painting"),
+        ("🔒", "Locksmith"),
+        ("🌿", "Cleaning"),
+        ("📦", "Moving"),
+    };
+
+    private void SelectCategory(string category)
+    {
+        _activeCategory = category;
+        ApplyFilters();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _technicians = await TechnicianApiService.GetAllTechniciansAsync();
+        ApplyFilters();
+        _isLoading = false;
+
+        StateHasChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        var result = _technicians.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(_searchName))
+            result = result.Where(t =>
+                t.FullName.Contains(
+                    _searchName,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(_searchSkill))
+            result = result.Where(t =>
+                t.Skills.Contains(
+                    _searchSkill,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(_searchLocation))
+            result = result.Where(t =>
+                t.Location.Contains(
+                    _searchLocation,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (_minRating > 0)
+            result = result.Where(t =>
+                t.AverageRating >= _minRating);
+
+        if (_activeCategory != "All")
+            result = result.Where(t =>
+                t.Skills.Contains(
+                    _activeCategory,
+                    StringComparison.OrdinalIgnoreCase));
+
+        result = _sortBy switch
+        {
+            SortRating => result.OrderByDescending(t => t.AverageRating),
+            SortJobs => result.OrderByDescending(t => t.CompletedJobs),
+            SortExperience => result.OrderByDescending(t => t.YearsExperience),
+            _ => result
+        };
+
+        _filtered = result.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        _searchName = string.Empty;
+        _searchSkill = string.Empty;
+        _searchLocation = string.Empty;
+        _sortBy = SortDefault;
+        _minRating = 0;
+        ApplyFilters();
+    }
+}

@@ -1,0 +1,61 @@
+﻿@using FixItNow.Domain.Models.BookingRequest.DTOs.Bookings
+
+<div style="background:#fff; border:1px solid var(--border);
+            border-radius:var(--radius-lg); overflow:hidden;
+            display:flex; opacity:0.85;">
+
+    <div style="width:200px; min-width:200px; height:160px;
+                background:linear-gradient(135deg,#374151,#1f2937);
+                display:flex; align-items:center; justify-content:center;
+                flex-shrink:0;">
+        <div style="text-align:center;">
+            <div style="font-size:36px; margin-bottom:8px;">
+                @TextHelper.GetCategoryEmoji(Booking.Category)
+            </div>
+            <div style="font-size:12px; font-weight:600;
+                        color:rgba(255,255,255,0.85);
+                        text-transform:uppercase; letter-spacing:0.05em;">
+                @Booking.Category
+            </div>
+        </div>
+    </div>
+
+    <div style="flex:1; padding:20px 24px; display:flex;
+                flex-direction:column; justify-content:space-between;">
+        <div>
+            <div style="display:flex; align-items:flex-start;
+                        justify-content:space-between; margin-bottom:6px;">
+                <div style="font-size:18px; font-weight:700; color:var(--text);">
+                    @TextHelper.Shorten(Booking.Title)
+                </div>
+                <span class="badge badge-declined"
+                      style="flex-shrink:0; margin-left:12px;">
+                    Declined
+                </span>
+            </div>
+            <div style="font-size:14px; color:var(--muted); margin-bottom:8px;">
+                @Booking.CustomerName · @Booking.CreatedAt.ToString("dd MMM yyyy")
+            </div>
+            <div style="font-size:13px; color:var(--muted);
+                        display:flex; align-items:center; gap:6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                @Booking.Location
+            </div>
+        </div>
+        <div style="margin-top:16px; padding-top:16px;
+                    border-top:1px solid var(--border);">
+            <span style="font-size:13px; color:#991b1b; font-weight:500;">
+                ✕ You declined this request
+            </span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public BookingRequestDto Booking { get; set; } = default!;
+}

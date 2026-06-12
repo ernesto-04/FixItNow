@@ -1,0 +1,447 @@
+﻿@page "/dashboard"
+@using FixItNow.Domain.Models.BookingRequest.Tickets
+@using FixItNow.Domain.Models.Bookings
+@using FixItNow.Web.ApiServices
+
+@inject AppState AppState
+@inject NavigationManager NavigationManager
+@inject TechnicianApiService TechnicianApiService
+@inject TicketApiService TicketApiService
+@inject BookingApiService BookingApiService
+@inject AuthenticationStateProvider AuthStateProvider
+@implements IDisposable
+
+
+@if (_isLoading)
+{
+    <div style="display:flex; align-items:center; justify-content:center; min-height:60vh;">
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+    </div>
+}
+else if (AppState.Mode == AppState.CustomerMode)
+{
+    <!-- CUSTOMER HERO -->
+    <div class="hero">
+        <div class="hero-bg-image"></div>
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="hero-eyebrow">FixItNow — Service Marketplace</div>
+            <h1 class="hero-title">
+                Find the right professional,<br />right away.
+            </h1>
+            <p class="hero-subtitle">
+                Book trusted technicians for any home service.
+                Fast, reliable, and vetted.
+            </p>
+            <div class="hero-search">
+                <input type="text"
+                        placeholder="What service are you looking for?"
+                        @bind="_heroSearch"
+                        @onkeyup="HeroSearchKeyUp" />
+                <button class="hero-search-btn" @onclick="HeroSearchGo">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="20" height="20"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2.5"
+                         stroke-linecap="round"
+                         stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                </button>
+            </div>
+            <div class="hero-tags">
+                @foreach (var tag in _heroTags)
+                {
+                    <span class="hero-tag" @onclick="@(() => HeroTagClick(tag))">
+                        @tag →
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="section">
+        <div class="section-title">Browse by category</div>
+        <div class="category-grid">
+            @foreach (var cat in _categories)
+            {
+                <div class="category-card"
+                        @onclick="@(() => NavigationManager.NavigateTo("/technicians"))">
+                    <span class="category-card-icon">@cat.Icon</span>
+                    <span class="category-card-label">@cat.Label</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- STATS -->
+    <div class="section">
+        <div class="section-title">Your overview</div>
+        <div class="stats-grid">
+            <div class="stat-card yellow">
+                <div class="stat-label">Pending Bookings</div>
+                <div class="stat-value">@_customerStats.PendingBookings</div>
+                <div class="stat-hint">Awaiting confirmation</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-label">Active Requests</div>
+                <div class="stat-value">@_customerStats.ActiveTickets</div>
+                <div class="stat-hint">In progress</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-label">Completed Requests</div>
+                <div class="stat-value">@_customerStats.CompletedTickets</div>
+                <div class="stat-hint">All time</div>
+            </div>
+            <div class="stat-card red"
+                    style="cursor:pointer;"
+                    @onclick="@(() => NavigationManager.NavigateTo("/technicians"))">
+                <div class="stat-label">Technicians</div>
+                <div class="stat-value">@_customerStats.TotalTechnicians</div>
+                <div class="stat-hint">Browse →</div>
+            </div>
+        </div>
+
+        <div class="section-title" style="margin-top:40px;">Quick actions</div>
+        <div class="actions-grid">
+            <div class="action-card"
+                    @onclick="@(() => NavigationManager.NavigateTo("/technicians"))">
+                <div class="action-icon green">
+                    <i class="bi bi-search" style="color:var(--green);"></i>
+                </div>
+                <div>
+                    <div class="action-title">Find a Technician</div>
+                    <div class="action-subtitle">Browse and book a service provider</div>
+                </div>
+            </div>
+            <div class="action-card"
+                    @onclick="@(() => NavigationManager.NavigateTo("/my-bookings"))">
+                <div class="action-icon yellow">
+                    <i class="bi bi-calendar-check" style="color:#f5a623;"></i>
+                </div>
+                <div>
+                    <div class="action-title">My Bookings</div>
+                    <div class="action-subtitle">Track your booking requests</div>
+                </div>
+            </div>
+            <div class="action-card"
+                    @onclick="@(() => NavigationManager.NavigateTo("/customer-tickets"))">
+                <div class="action-icon blue">
+                    <i class="bi bi-briefcase" style="color:#4a90d9;"></i>
+                </div>
+                <div>
+                    <div class="action-title">My Requests</div>
+                    <div class="action-subtitle">Track your active requests</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- TECHNICIAN HERO -->
+    <div class="hero">
+        <div class="hero-bg-image"></div>
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="hero-eyebrow">Technician Workspace</div>
+            <h1 class="hero-title">
+                Grow your business with<br />FixItNow.
+            </h1>
+            <p class="hero-subtitle">
+                Manage bookings, track active jobs,
+                and build your reputation.
+            </p>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <button class="btn btn-primary"
+                        style="padding:14px 28px; font-size:15px;"
+                        @onclick="@(() => NavigationManager.NavigateTo("/booking-requests"))">
+                    <i class="bi bi-inbox"></i>
+                    View Booking Requests
+                    @if (_technicianStats.PendingBookings > 0)
+                    {
+                        <span style="background:white; color:var(--green);
+                                                border-radius:20px; padding:2px 8px;
+                                                font-size:11px; font-weight:700; margin-left:4px;">
+                            @_technicianStats.PendingBookings
+                        </span>
+                    }
+                </button>
+                @if (_technicianStats.AverageRating > 0)
+                {
+                    <span style="display:inline-flex; align-items:center; gap:6px;
+                                            padding:8px 14px; background:rgba(255,255,255,0.1);
+                                            border:1px solid rgba(255,255,255,0.2); border-radius:20px;
+                                            font-size:13px; color:rgba(255,255,255,0.9); font-weight:500;">
+                        ⭐ @_technicianStats.AverageRating.ToString("0.0") rated
+                    </span>
+                }
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.1);
+                        margin-top:32px; padding-top:28px;
+                        display:flex; gap:32px;">
+            <div>
+                <div style="font-size:28px; font-weight:800; color:#fff; letter-spacing:-0.5px;">
+                    @_technicianStats.CompletedJobs
+                </div>
+                <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-top:2px;">
+                    Jobs Completed
+                </div>
+            </div>
+            <div>
+                <div style="font-size:28px; font-weight:800; color:#fff; letter-spacing:-0.5px;">
+                    @_technicianStats.ActiveJobs
+                </div>
+                <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-top:2px;">
+                    Active Jobs
+                </div>
+            </div>
+            <div>
+                <div style="font-size:28px; font-weight:800; color:#fff; letter-spacing:-0.5px;">
+                    @(_technicianStats.AverageRating > 0
+                                            ? _technicianStats.AverageRating.ToString("0.0") + " ★"
+                                            : "—")
+                                                </div>
+                                                <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-top:2px;">
+                                                    Avg Rating
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+<!-- TECHNICIAN STATS -->
+<div class="section">
+    <div class="section-title">Your overview</div>
+    <div class="stats-grid">
+        <div class="stat-card yellow">
+            <div class="stat-label">Pending Requests</div>
+            <div class="stat-value">@_technicianStats.PendingBookings</div>
+            <div class="stat-hint">Needs your response</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-label">Active Jobs</div>
+            <div class="stat-value">@_technicianStats.ActiveJobs</div>
+            <div class="stat-hint">In progress</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label">Completed Jobs</div>
+            <div class="stat-value">@_technicianStats.CompletedJobs</div>
+            <div class="stat-hint">All time</div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-label">Avg Rating</div>
+            <div class="stat-value">
+                @(_technicianStats.AverageRating > 0
+                                    ? _technicianStats.AverageRating.ToString("0.0")
+                                    : "—")
+                                        </div>
+                                        <div class="stat-hint">★ From reviews</div>
+                                    </div>
+                                </div>
+
+    <div class="section-title" style="margin-top:40px;">Quick actions</div>
+    <div class="actions-grid">
+        <div class="action-card"
+                @onclick="@(() => NavigationManager.NavigateTo("/booking-requests"))">
+            <div class="action-icon green">
+                <i class="bi bi-inbox" style="color:var(--green);"></i>
+            </div>
+            <div>
+                <div class="action-title">Booking Requests</div>
+                <div class="action-subtitle">
+                    @(_technicianStats.PendingBookings > 0
+                                            ? $"{_technicianStats.PendingBookings} pending"
+                                            : "No pending requests")
+                </div>
+            </div>
+        </div>
+        <div class="action-card"
+                @onclick="@(() => NavigationManager.NavigateTo("/technician-tickets"))">
+            <div class="action-icon blue">
+                <i class="bi bi-tools" style="color:#4a90d9;"></i>
+            </div>
+            <div>
+                <div class="action-title">My Jobs</div>
+                <div class="action-subtitle">View and manage active jobs</div>
+            </div>
+        </div>
+        <div class="action-card"
+                @onclick="@(() => NavigationManager.NavigateTo("/edit-profile"))">
+            <div class="action-icon yellow">
+                <i class="bi bi-person-gear" style="color:#f5a623;"></i>
+            </div>
+            <div>
+                <div class="action-title">Edit Profile</div>
+                <div class="action-subtitle">Update your marketplace profile</div>
+            </div>
+        </div>
+    </div>
+</div>
+    }
+
+@code {
+    private string _fullName = string.Empty;
+    private bool _isLoading = true;
+
+    private CustomerDashboardStats _customerStats = new();
+    private TechnicianDashboardStats _technicianStats = new();
+
+    private string _heroSearch = string.Empty;
+
+    private readonly List<(string Icon, string Label)> _categories = new()
+    {
+        ("🔧", "All Services"),
+        ("🚿", "Plumbing"),
+        ("⚡", "Electrical"),
+        ("❄️", "AC Repair"),
+        ("🏠", "Renovation"),
+        ("🎨", "Painting"),
+        ("🔒", "Locksmith"),
+        ("🌿", "Cleaning"),
+    };
+
+    private readonly List<string> _heroTags = new()
+    {
+        "Plumbing", "Electrical", "AC Repair", "Cleaning", "Renovation"
+    };
+
+    private void HeroSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") HeroSearchGo();
+    }
+
+    private void HeroSearchGo()
+    {
+        // TODO: pass _heroSearch as query param when technician filtering is implemented
+        NavigationManager.NavigateTo("/technicians");
+    }
+
+    private void HeroTagClick(string tag)
+    {
+        // TODO: pass tag as category filter when technician filtering is implemented
+        NavigationManager.NavigateTo("/technicians");
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += OnModeChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= OnModeChanged;
+    }
+
+    private void OnModeChanged()
+    {
+        _isLoading = true;
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                await LoadAsync();
+            }
+            finally
+            {
+                _isLoading = false;
+                StateHasChanged();
+            }
+        });
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        _fullName = authState.User.FindFirst("FullName")?.Value
+            ?? authState.User.FindFirst(ClaimTypes.Name)?.Value
+            ?? "there";
+
+        if (AppState.Mode == AppState.TechnicianMode)
+            await LoadTechnicianStatsAsync(authState);
+        else
+            await LoadCustomerStatsAsync();
+
+        _isLoading = false;
+    }
+
+    private async Task LoadCustomerStatsAsync()
+    {
+        var bookingsTask = BookingApiService.GetCustomerBookingsAsync();
+        var ticketsTask = TicketApiService.GetCustomerTicketsAsync();
+        var techniciansTask = TechnicianApiService.GetAllTechniciansAsync();
+
+        await Task.WhenAll(bookingsTask, ticketsTask, techniciansTask);
+
+        var bookings = bookingsTask.Result;
+        var tickets = ticketsTask.Result;
+        var technicians = techniciansTask.Result;
+
+        _customerStats = new()
+        {
+            PendingBookings = bookings.Count(b => b.Status == BookingStatus.Pending),
+            ActiveTickets = tickets.Count(t =>
+                t.Status == TicketStatus.Assigned ||
+                t.Status == TicketStatus.InProgress),
+            CompletedTickets = tickets.Count(t => t.Status == TicketStatus.Completed),
+            TotalTechnicians = technicians.Count
+        };
+    }
+
+    private async Task LoadTechnicianStatsAsync(AuthenticationState authState)
+    {
+        var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = int.TryParse(claim, out var id) ? id : 0;
+
+        var bookingsTask = BookingApiService.GetTechnicianBookingsAsync();
+        var ticketsTask = TicketApiService.GetTechnicianTicketsAsync();
+        var profileTask = TechnicianApiService.GetTechnicianByIdAsync(userId);
+
+        await Task.WhenAll(bookingsTask, ticketsTask, profileTask);
+
+        var bookings = bookingsTask.Result;
+        var tickets = ticketsTask.Result;
+        var profile = profileTask.Result;
+
+        _technicianStats = new()
+        {
+            PendingBookings = bookings.Count(b => b.Status == BookingStatus.Pending),
+            ActiveJobs = tickets.Count(t =>
+                t.Status == TicketStatus.Assigned ||
+                t.Status == TicketStatus.InProgress),
+            CompletedJobs = tickets.Count(t => t.Status == TicketStatus.Completed),
+            AverageRating = profile?.AverageRating ?? 0
+        };
+    }
+
+    private class CustomerDashboardStats
+    {
+        public int PendingBookings { get; set; }
+        public int ActiveTickets { get; set; }
+        public int CompletedTickets { get; set; }
+        public int TotalTechnicians { get; set; }
+    }
+
+    private class TechnicianDashboardStats
+    {
+        public int PendingBookings { get; set; }
+        public int ActiveJobs { get; set; }
+        public int CompletedJobs { get; set; }
+        public double AverageRating { get; set; }
+    }
+}

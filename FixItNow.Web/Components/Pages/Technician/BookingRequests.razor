@@ -1,0 +1,384 @@
+﻿@page "/booking-requests"
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Bookings
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Tickets
+@using FixItNow.Domain.Models.BookingRequest.Tickets
+@using FixItNow.Domain.Models.Bookings
+@using FixItNow.Web.ApiServices
+@using FixItNow.Web.Components.Pages.Technician.Cards
+
+@inject BookingApiService BookingApiService
+@inject TicketApiService TicketApiService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div>
+
+    @if (_isLoading)
+    {
+        <div style="display:flex; align-items:center;
+                        justify-content:center; min-height:60vh;">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <div style="padding:40px 48px;">
+
+            <h1 style="font-size:32px; font-weight:800; color:var(--text);
+                           letter-spacing:-0.8px; margin-bottom:32px;">
+                My Jobs
+            </h1>
+
+            <!-- TABS -->
+            <div style="display:flex; gap:0; border-bottom:1px solid var(--border);
+                            margin-bottom:32px;">
+                @foreach (var tab in new[] { TabRequest, TabActive, TabHistory })
+                {
+                    <button @onclick="@(() => _activeTab = tab)"
+                            style="padding:12px 24px; background:none; border:none;
+                                           font-family:inherit; font-size:15px; cursor:pointer;
+                                           font-weight:@(_activeTab == tab ? "700" : "500");
+                                           color:@(_activeTab == tab ? "var(--text)" : "var(--muted)");
+                                           border-bottom:2px solid @(_activeTab == tab ? "var(--text)" : "transparent");
+                                           margin-bottom:-1px; transition:all .15s ease;">
+                        @tab
+                        @{
+                            var count = tab switch
+                            {
+                                TabRequest => _requests.Count,
+                                TabActive => _active.Count,
+                                TabHistory => _history.Count,
+                                _ => 0
+                            };
+                        }
+                        @if (count > 0)
+                        {
+                            <span style="margin-left:6px;
+                                                     background:@(_activeTab == tab ? "var(--text)" : "#e5e5e5");
+                                                     color:@(_activeTab == tab ? "white" : "var(--muted)");
+                                                     border-radius:20px; padding:2px 8px;
+                                                     font-size:11px; font-weight:600;">
+                                @count
+                            </span>
+                        }
+                    </button>
+                }
+            </div>
+
+            <!-- REQUESTS TAB -->
+            @if (_activeTab == TabRequest)
+            {
+                @if (_requests.Count == 0)
+                {
+                    <div style="text-align:center; padding:80px 20px;
+                                            border:1px solid var(--border);
+                                            border-radius:var(--radius-lg);">
+                        <div style="font-size:48px; margin-bottom:16px;">📭</div>
+                        <div style="font-size:18px; font-weight:700;
+                                                color:var(--text); margin-bottom:8px;">
+                            No Booking Requests
+                        </div>
+                        <div style="font-size:14px; color:var(--muted);">
+                            When customers book you, their requests will appear here.
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @if (_requests.Any(r => r.Status == BookingStatus.Pending))
+                    {
+                        <div style="display:flex; align-items:center; gap:10px;
+                                                        background:#f0fdf4; border:1px solid #bbf7d0;
+                                                        border-radius:var(--radius-md); padding:14px 20px;
+                                                        margin-bottom:24px;">
+                            <span style="font-size:18px;">🔔</span>
+                            <span style="font-size:14px; font-weight:600; color:#166534;">
+                                @_requests.Count(r => r.Status == BookingStatus.Pending)
+                                pending request@(_requests.Count(r => r.Status == BookingStatus.Pending) == 1 ? "" : "s")
+                                waiting for your response
+                            </span>
+                        </div>
+                    }
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        @foreach (var booking in _requests)
+                        {
+                            <RequestCard Booking="booking"
+                                         IsProcessing="_processingId == booking.Id"
+                                         OnAccept="@(() => AcceptAsync(booking.Id))"
+                                         OnDecline="@(() => DeclineAsync(booking.Id))" />
+                        }
+                    </div>
+                }
+            }
+
+            <!-- ACTIVE TAB -->
+            @if (_activeTab == TabActive)
+            {
+                @if (_active.Count == 0)
+                {
+                    <div style="text-align:center; padding:80px 20px;
+                                            border:1px solid var(--border);
+                                            border-radius:var(--radius-lg);">
+                        <div style="font-size:48px; margin-bottom:16px;">🔧</div>
+                        <div style="font-size:18px; font-weight:700;
+                                                color:var(--text); margin-bottom:8px;">
+                            No Active Jobs
+                        </div>
+                        <div style="font-size:14px; color:var(--muted);">
+                            Accept a booking request to start working.
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        @foreach (var ticket in _active)
+                        {
+                            <ActiveCard Ticket="ticket"
+                                        OnStartJob="@(() => UpdateStatus(ticket.Id, TicketStatus.InProgress))"
+                                        OnCompleteJob="@(() => UpdateStatus(ticket.Id, TicketStatus.Completed))"
+                                        OnChat="@(() => NavigationManager.NavigateTo($"/chat/{ticket.Id}"))"
+                                        OnCancel="@(() => OpenCancelDialog(ticket.Id))" />
+                        }
+                    </div>
+                }
+            }
+
+            <!-- HISTORY TAB -->
+            @if (_activeTab == TabHistory)
+            {
+                @if (_history.Count == 0)
+                {
+                    <div style="text-align:center; padding:80px 20px;
+                                            border:1px solid var(--border);
+                                            border-radius:var(--radius-lg);">
+                        <div style="font-size:48px; margin-bottom:16px;">📅</div>
+                        <div style="font-size:18px; font-weight:700;
+                                                color:var(--text); margin-bottom:8px;">
+                            No History Yet
+                        </div>
+                        <div style="font-size:14px; color:var(--muted);">
+                            Completed jobs and declined requests appear here.
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        @foreach (var ticket in _completedTickets)
+                        {
+                            <HistoryCard Ticket="ticket" />
+                        }
+                        @foreach (var booking in _declinedBookings)
+                        {
+                            <DeclinedCard Booking="booking" />
+                        }
+                        @foreach (var ticket in _cancelledTickets)
+                        {
+                            <HistoryCard Ticket="ticket" />
+                        }
+                    </div>
+                }
+            }
+
+        </div>
+    }
+
+</div>
+
+@if (_showCancelDialog)
+{
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+                    display:flex; align-items:center; justify-content:center;
+                    z-index:1300;"
+         @onclick="@(() => _showCancelDialog = false)">
+
+        <div style="background:#fff; border-radius:var(--radius-lg);
+                        padding:24px; width:420px; max-width:90vw;"
+             @onclick:stopPropagation="true">
+
+            <div style="font-weight:700; font-size:16px; margin-bottom:12px;">
+                Cancel this job?
+            </div>
+
+            <MudTextField @bind-Value="_cancelReason"
+                          Label="Reason for cancellation"
+                          Lines="3"
+                          FullWidth="true" />
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+                <button class="btn btn-outline"
+                        @onclick="@(() => _showCancelDialog = false)">
+                    Back
+                </button>
+                <button class="btn btn-danger"
+                        disabled="@(string.IsNullOrWhiteSpace(_cancelReason) || _isCancelling)"
+                        @onclick="ConfirmCancelTicketAsync">
+                    @(_isCancelling ? "Cancelling..." : "Confirm Cancel")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<BookingRequestDto> _bookings = [];
+    private List<BookingRequestDto> _requests = [];
+    private List<TechnicianTicketResponse> _tickets = [];
+    private List<TechnicianTicketResponse> _active = [];
+    private List<TechnicianTicketResponse> _completedTickets = [];
+    private List<BookingRequestDto> _declinedBookings = [];
+    private List<TechnicianTicketResponse> _cancelledTickets = [];
+    private List<object> _history = [];
+
+    private const string TabActive = "Active";
+    private const string TabRequest = "Requests";
+    private const string TabPending = "Pending";
+    private const string TabHistory = "History";
+
+    private bool _isLoading = true;
+    private string _activeTab = TabRequest;
+    private int _processingId;
+    private int _cancelTicketId;
+    private bool _showCancelDialog;
+    private string _cancelReason = string.Empty;
+    private int _cancelBookingId;
+    private bool _isCancelling;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadAsync()
+    {
+        _bookings = await BookingApiService.GetTechnicianBookingsAsync();
+        _tickets = await TicketApiService.GetTechnicianTicketsAsync();
+        SplitData();
+        _isLoading = false;
+    }
+
+    private void SplitData()
+    {
+        _requests = _bookings
+            .Where(b => b.Status == BookingStatus.Pending)
+            .ToList();
+
+        _active = _tickets
+            .Where(t => t.Status == TicketStatus.Assigned ||
+                        t.Status == TicketStatus.InProgress)
+            .ToList();
+
+        _completedTickets = _tickets
+            .Where(t => t.Status == TicketStatus.Completed)
+            .ToList();
+
+        _declinedBookings = _bookings
+            .Where(b => b.Status == BookingStatus.Declined)
+            .ToList();
+
+        _cancelledTickets = _tickets
+            .Where(t => t.Status == TicketStatus.Cancelled)
+            .ToList();
+    }
+
+    private async Task AcceptAsync(int bookingId)
+    {
+        _processingId = bookingId;
+        var success = await BookingApiService.AcceptBookingAsync(bookingId);
+        if (success)
+        {
+            Snackbar.Add("Booking accepted! Job created.", Severity.Success);
+            await LoadAsync();
+            _activeTab = TabActive;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Failed to accept booking.", Severity.Error);
+        }
+        _processingId = 0;
+    }
+
+    private async Task DeclineAsync(int bookingId)
+    {
+        _processingId = bookingId;
+        var success = await BookingApiService.DeclineBookingAsync(bookingId);
+        if (success)
+        {
+            Snackbar.Add("Booking declined.", Severity.Normal);
+            await LoadAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Failed to decline booking.", Severity.Error);
+        }
+        _processingId = 0;
+    }
+
+    private async Task UpdateStatus(int ticketId, TicketStatus status)
+    {
+        var success = await TicketApiService
+            .UpdateTicketStatusAsync(ticketId, status);
+        if (success)
+        {
+            Snackbar.Add(
+                status == TicketStatus.Completed
+                    ? "Job marked as complete!" : "Job started!",
+                Severity.Success);
+            await LoadAsync();
+            if (status == TicketStatus.Completed)
+                _activeTab = TabHistory;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Failed to update status.", Severity.Error);
+        }
+    }
+
+    private async Task ConfirmCancelTicketAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_cancelReason)) return;
+
+        _isCancelling = true;
+        try
+        {
+            var success = await TicketApiService.CancelTicketAsync(_cancelTicketId, _cancelReason);
+            if (success)
+            {
+                _showCancelDialog = false;
+                Snackbar.Add("Job cancelled.", Severity.Success);
+                await LoadAsync();
+                _activeTab = TabHistory;
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add("Failed to cancel job.", Severity.Error);
+            }
+        }
+        finally
+        {
+            _isCancelling = false;
+        }
+    }
+
+    private void OpenCancelDialog(int ticketId)
+    {
+        _cancelTicketId = ticketId;
+        _cancelReason = string.Empty;
+        _showCancelDialog = true;
+    }
+}

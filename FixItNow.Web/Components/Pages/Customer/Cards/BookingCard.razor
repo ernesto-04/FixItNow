@@ -1,0 +1,275 @@
+﻿@using FixItNow.Domain.Models.BookingRequest.DTOs.Bookings
+@using FixItNow.Domain.Models.Bookings
+
+@inject NavigationManager NavigationManager
+@inject BookingApiService BookingApiService
+@inject ISnackbar Snackbar
+
+<div style="background:#fff; border:1px solid var(--border);
+                     border-radius:var(--radius-lg); overflow:hidden;
+                     display:flex; transition:box-shadow .2s ease;"
+     onmouseover="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.10)'"
+     onmouseout="this.style.boxShadow='none'">
+
+    <!-- LEFT — COLOR BAND (replaces image since we have none) -->
+    <div style="width:200px; min-width:200px; height:160px;
+                        background:@GetCardGradient(booking);
+                        display:flex; align-items:center; justify-content:center;
+                        flex-shrink:0;">
+        <div style="text-align:center;">
+            <div style="font-size:36px; margin-bottom:8px;">
+                @TextHelper.GetCategoryEmoji(booking.Category)
+            </div>
+            <div style="font-size:12px; font-weight:600;
+                                color:rgba(255,255,255,0.85);
+                                text-transform:uppercase; letter-spacing:0.05em;">
+                @booking.Category
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT — CONTENT -->
+    <div style="flex:1; padding:20px 24px; display:flex;
+                        flex-direction:column; justify-content:space-between;">
+
+        <div>
+            <!-- TITLE + BADGE -->
+            <div style="display:flex; align-items:flex-start;
+                                justify-content:space-between; margin-bottom:6px;">
+                <div style="font-size:18px; font-weight:700;
+            color:var(--text); letter-spacing:-0.2px;">
+                    @TextHelper.Shorten(booking.Title)
+                </div>
+                <span class="badge badge-@booking.Status.ToString().ToLower()"
+                      style="flex-shrink:0; margin-left:12px;">
+                    @GetStatusLabel(booking)
+                </span>
+            </div>
+
+            <!-- TECHNICIAN + DATE -->
+            <div style="font-size:14px; color:var(--muted); margin-bottom:12px;">
+                @booking.TechnicianName · @booking.CreatedAt.ToString("dd MMM yyyy")
+            </div>
+
+            <!-- LOCATION -->
+            <div style="font-size:13px; color:var(--muted);
+                                display:flex; align-items:center; gap:6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                @booking.Location
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div style="display:flex; align-items:center;
+            justify-content:space-between; margin-top:16px;
+            padding-top:16px; border-top:1px solid var(--border);">
+
+            @if (booking.Status == BookingStatus.Pending)
+            {
+                <span style="font-size:13px; color:#92400e; font-weight:500;">
+                    ⏳ Waiting for technician response
+                </span>
+                <button class="btn btn-outline"
+                        style="padding:8px 16px; font-size:13px;"
+                        @onclick="OpenCancelDialog">
+                    Cancel Request
+                </button>
+            }
+
+            @if (booking.Status == BookingStatus.Accepted &&
+                        booking.TicketStatus != TicketStatus.Completed &&
+                        booking.TicketStatus != TicketStatus.Cancelled)
+            {
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="width:8px; height:8px; border-radius:50%;
+                     background:var(--green); display:inline-block;"></span>
+                    <span style="font-size:13px; font-weight:500; color:#065f46;">
+                        Request in progress
+                    </span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    @if (booking.TicketId.HasValue)
+                    {
+                        <button class="btn btn-outline"
+                                style="padding:8px 16px; font-size:13px;"
+                                @onclick="@(() => NavigationManager.NavigateTo($"/chat/{booking.TicketId}"))">
+                            💬 Chat
+                        </button>
+                    }
+                    <button class="btn btn-outline"
+                            style="padding:8px 16px; font-size:13px; color:#ef4444;"
+                            @onclick="OpenCancelDialog">
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary"
+                            style="padding:8px 16px; font-size:13px;"
+                            @onclick="@(() => NavigationManager.NavigateTo($"/ticket/{booking.TicketId}"))">
+                        View Details →
+                    </button>
+                </div>
+            }
+
+            @if (booking.Status == BookingStatus.Cancelled ||
+                        booking.TicketStatus == TicketStatus.Cancelled)
+            {
+                <div>
+                    <span style="font-size:13px; color:#991b1b; font-weight:500;">
+                        ✕ Cancelled
+                    </span>
+                    @if (!string.IsNullOrWhiteSpace(booking.CancellationReason))
+                    {
+                        <div style="font-size:12px; color:var(--muted); margin-top:4px;">
+                            "@booking.CancellationReason"
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (booking.Status == BookingStatus.Declined)
+            {
+                <span style="font-size:13px; color:#991b1b; font-weight:500;">
+                    ✕ Request was declined
+                </span>
+                <button class="btn btn-outline"
+                        style="padding:8px 16px; font-size:13px;"
+                        @onclick="@(() => NavigationManager.NavigateTo("/technicians"))">
+                    Find Another →
+                </button>
+            }
+
+            @if (booking.Status == BookingStatus.Accepted &&
+                        booking.TicketStatus == TicketStatus.Completed)
+            {
+                <span style="font-size:13px; color:#065f46; font-weight:500;">
+                    ✓ Request completed
+                </span>
+                <button class="btn btn-outline"
+                        style="padding:8px 16px; font-size:13px;"
+                        @onclick="@(() => NavigationManager.NavigateTo($"/ticket/{booking.TicketId}"))">
+                    View Details →
+                </button>
+            }
+
+        </div>
+    </div>
+</div>
+
+@if (_showCancelDialog)
+{
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.4);
+                    display:flex; align-items:center; justify-content:center;
+                    z-index:1300;"
+         @onclick="@(() => _showCancelDialog = false)">
+
+        <div style="background:#fff; border-radius:var(--radius-lg);
+                        padding:24px; width:400px; max-width:90vw;"
+             @onclick:stopPropagation="true">
+
+            <div style="font-weight:700; font-size:16px; margin-bottom:12px;">
+                Cancel this booking?
+            </div>
+
+            <MudTextField @bind-Value="_cancelReason"
+                          Label="Reason for cancellation"
+                          Lines="3"
+                          FullWidth="true" />
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                <button class="btn btn-outline"
+                        style="padding:8px 16px; font-size:13px;"
+                        @onclick="@(() => _showCancelDialog = false)">
+                    Back
+                </button>
+                <button class="btn btn-primary"
+                        style="padding:8px 16px; font-size:13px; background:#ef4444;"
+                        disabled="@(string.IsNullOrWhiteSpace(_cancelReason) || _isCancelling)"
+                        @onclick="ConfirmCancelAsync">
+                    @(_isCancelling ? "Cancelling..." : "Confirm Cancel")
+                </button>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] 
+    public BookingRequestDto booking { get; set; } = default!;
+    [Parameter]
+    public EventCallback OnCancelled { get; set; }
+
+    private bool _showCancelDialog;
+    private string _cancelReason = string.Empty;
+    private bool _isCancelling;
+
+    private void OpenCancelDialog() => _showCancelDialog = true;
+
+    private async Task ConfirmCancelAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_cancelReason)) return;
+
+        _isCancelling = true;
+        try
+        {
+            var (success, error) = await BookingApiService.CancelBookingAsync(booking.Id, _cancelReason);
+            if (success)
+            {
+                _showCancelDialog = false;
+                Snackbar.Add("Booking cancelled.", Severity.Success);
+                await OnCancelled.InvokeAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Error);
+            }
+        }
+        finally
+        {
+            _isCancelling = false;
+        }
+    }
+
+    private static string GetCardGradient(BookingRequestDto booking)
+    {
+        if (booking.Status == BookingStatus.Declined)
+            return "linear-gradient(135deg, #374151, #1f2937)";
+        if (booking.TicketStatus == TicketStatus.Completed)
+            return "linear-gradient(135deg, #065f46, #047857)";
+        if (booking.TicketStatus == TicketStatus.InProgress)
+            return "linear-gradient(135deg, #92400e, #b45309)";
+        return "linear-gradient(135deg, #1a1a2e, #0d4f3c)";
+    }
+
+    private static string GetCategoryEmoji(string? category) =>
+    category?.ToLower() switch
+    {
+        { } c when c.Contains("plumb") => "🚿",
+        { } c when c.Contains("electr") => "⚡",
+        { } c when c.Contains("ac") => "❄️",
+        { } c when c.Contains("paint") => "🎨",
+        { } c when c.Contains("clean") => "🌿",
+        { } c when c.Contains("lock") => "🔒",
+        { } c when c.Contains("renov") => "🏠",
+        _ => "🔧"
+    };
+
+    private static string GetStatusLabel(BookingRequestDto booking) =>
+        booking.Status switch
+        {
+            BookingStatus.Pending => "Pending",
+            BookingStatus.Declined => "Declined",
+            BookingStatus.Accepted => booking.TicketStatus switch
+            {
+                TicketStatus.Assigned => "Assigned",
+                TicketStatus.InProgress => "In Progress",
+                TicketStatus.Completed => "Completed",
+                _ => "Accepted"
+            },
+            _ => booking.Status.ToString()
+        };
+}

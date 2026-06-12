@@ -1,0 +1,303 @@
+﻿@page "/chat/{TicketId:int}"
+@using FixItNow.Domain.Models.BookingRequest.Chat
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Chat
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Tickets
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject ProtectedLocalStorage LocalStorage
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject AuthenticatedHttpService AuthenticatedHttpService
+@inject IJSRuntime JS
+
+<div style="height:100vh; display:flex; flex-direction:column;
+            background:#fff; overflow:hidden;">
+
+    <!-- TOPBAR -->
+    <div style="padding:16px 24px; border-bottom:1px solid var(--border);
+                background:#fff; display:flex; align-items:center;
+                gap:16px; flex-shrink:0;">
+
+        <button @onclick="@(() => NavigationManager.NavigateTo("/my-bookings"))"
+                style="background:none; border:none; cursor:pointer;
+                       padding:6px; border-radius:50%; color:var(--muted);
+                       display:flex; align-items:center; justify-content:center;
+                       transition:background .15s ease;"
+                onmouseover="this.style.background='#f5f5f5'"
+                onmouseout="this.style.background='none'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+            </svg>
+        </button>
+
+        @if (_ticket != null)
+        {
+            <div style="width:40px; height:40px; border-radius:50%;
+                            background:linear-gradient(135deg, var(--green), var(--green-dark));
+                            color:white; display:flex; align-items:center;
+                            justify-content:center; font-size:15px; font-weight:700;
+                            flex-shrink:0;">
+                @((_ticket.TechnicianName ?? _ticket.CustomerName ?? "?").FirstOrDefault())
+            </div>
+
+            <div style="flex:1;">
+                <div style="font-size:15px; font-weight:700; color:var(--text);">
+                    @(_ticket.TechnicianName ?? _ticket.CustomerName ?? "Chat")
+                </div>
+                <div style="font-size:12px; color:var(--muted);">
+                    @_ticket.Title
+                </div>
+            </div>
+
+            <!-- STATUS BADGE -->
+            <span class="badge badge-@_ticket.Status.ToString().ToLower()">
+                @_ticket.Status
+            </span>
+        }
+
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="message-container"
+         style="flex:1; overflow-y:auto; padding:24px;
+                display:flex; flex-direction:column; gap:12px;
+                background:#f7f7f7;">
+
+        @if (_messages.Count == 0)
+        {
+            <div style="text-align:center; padding:60px 20px; color:var(--muted);">
+                <div style="font-size:40px; margin-bottom:12px;">💬</div>
+                <div style="font-size:15px; font-weight:600;
+                                color:var(--text); margin-bottom:6px;">
+                    No messages yet
+                </div>
+                <div style="font-size:13px;">
+                    Send a message to get started
+                </div>
+            </div>
+        }
+
+        @foreach (var msg in _messages)
+        {
+            bool isMine = msg.SenderId == _currentUserId;
+
+            <div style="display:flex;
+                            justify-content:@(isMine ? "flex-end" : "flex-start");">
+
+                @if (!isMine)
+                {
+                    <div style="width:32px; height:32px; border-radius:50%;
+                                        background:linear-gradient(135deg, var(--green), var(--green-dark));
+                                        color:white; display:flex; align-items:center;
+                                        justify-content:center; font-size:12px; font-weight:700;
+                                        flex-shrink:0; margin-right:8px; align-self:flex-end;">
+                        @((_ticket?.TechnicianName ?? _ticket?.CustomerName ?? "?").FirstOrDefault())
+                    </div>
+                }
+
+                <div style="max-width:65%;">
+                    <div style="padding:12px 16px;
+                                    background:@(isMine ? "var(--green)" : "#fff");
+                                    color:@(isMine ? "white" : "var(--text)");
+                                    border-radius:@(isMine
+                                                             ? "18px 18px 4px 18px"
+                                                             : "18px 18px 18px 4px");
+                                font-size:14px; line-height:1.5;
+                                border:@(isMine ? "none" : "1px solid var(--border)");
+                                box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+                    @msg.Message
+                </div>
+                <div style="font-size:11px; color:var(--muted);
+                                margin-top:4px;
+                                text-align:@(isMine ? "right" : "left");
+                                padding:0 4px;">
+                    @msg.CreatedAt.ToLocalTime().ToString("HH:mm")
+                </div>
+            </div>
+
+            </div>
+                }
+
+    </div>
+
+    <!-- INPUT BAR -->
+    <div style="padding:16px 24px; border-top:1px solid var(--border);
+                background:#fff; flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:12px;
+                    background:#f5f5f5; border-radius:24px;
+                    padding:8px 8px 8px 20px;
+                    border:1.5px solid transparent;
+                    transition:border-color .15s ease;"
+             onfocus="this.style.borderColor='var(--green)'"
+             onblur="this.style.borderColor='transparent'">
+
+            <input type="text"
+                   placeholder="Type a message..."
+                   value="@_messageInput"
+                   @oninput="@(e => _messageInput = e.Value?.ToString() ?? "")"
+                   @onkeyup="HandleKeyUp"
+                   style="flex:1; background:none; border:none; outline:none;
+                          font-size:14px; font-family:inherit; color:var(--text);" />
+
+            <button @onclick="SendMessage"
+                    disabled="@(string.IsNullOrWhiteSpace(_messageInput))"
+                    style="width:40px; height:40px; border-radius:50%;
+                           background:@(string.IsNullOrWhiteSpace(_messageInput)
+                                                   ? "#e5e5e5" : "var(--green)");
+                           border:none; cursor:@(string.IsNullOrWhiteSpace(_messageInput)
+                                                   ? "default" : "pointer");
+                           display:flex; align-items:center; justify-content:center;
+                           flex-shrink:0; transition:background .15s ease;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                     viewBox="0 0 24 24" fill="none"
+                     stroke="@(string.IsNullOrWhiteSpace(_messageInput) ? "var(--muted)" : "white")"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+            </button>
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+    [Parameter]
+    public int TicketId { get; set; }
+
+    private TicketChatResponse? _ticket;
+    private HubConnection? _hubConnection;
+    private List<ChatMessage> _messages = new();
+    private string _messageInput = string.Empty;
+    private int _receiverId;
+    private int _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUserAsync();
+
+        var token = await GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        var ticketResponse = await AuthenticatedHttpService
+            .GetAsync($"api/tickets/{TicketId}/chat");
+
+        if (!ticketResponse.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/my-bookings");
+            return;
+        }
+
+        _ticket = await ticketResponse.Content
+            .ReadFromJsonAsync<TicketChatResponse>();
+
+        if (_ticket is null)
+        {
+            NavigationManager.NavigateTo("/my-bookings");
+            return;
+        }
+
+        _receiverId = _ticket.ReceiverId;
+
+        var chatResponse = await AuthenticatedHttpService
+            .GetAsync($"api/chat/ticket/{TicketId}");
+
+        if (chatResponse.IsSuccessStatusCode)
+        {
+            _messages = await chatResponse.Content
+                .ReadFromJsonAsync<List<ChatMessage>>() ?? [];
+            await RefreshAndScrollAsync(delay: 100);
+        }
+
+        await InitializeHubAsync();
+    }
+
+    private async Task InitializeHubAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(
+                NavigationManager.ToAbsoluteUri("/chatHub"),
+                options => options.AccessTokenProvider = GetTokenAsync)
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<ChatMessage>("ReceiveMessage", async message =>
+        {
+            _messages.Add(message);
+            await RefreshAndScrollAsync(delay: 50);
+        });
+
+        await _hubConnection.StartAsync();
+        await _hubConnection.SendAsync("JoinTicketRoom", TicketId);
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_messageInput) ||
+            _receiverId <= 0 ||
+            _hubConnection is null)
+            return;
+
+        await _hubConnection.SendAsync("SendMessage", new SendMessageDto
+        {
+            ReceiverId = _receiverId,
+            TicketId = TicketId,
+            Message = _messageInput
+        });
+
+        _messageInput = string.Empty;
+        await RefreshAndScrollAsync(delay: 50);
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_messageInput))
+            await SendMessage();
+    }
+
+    private async Task LoadCurrentUserAsync()
+    {
+        var authState = await AuthenticationStateProvider
+            .GetAuthenticationStateAsync();
+
+        var userIdClaim = authState.User
+            .FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+            ?.Value;
+
+        if (int.TryParse(userIdClaim, out var parsedId))
+            _currentUserId = parsedId;
+    }
+
+    private async Task<string?> GetTokenAsync()
+    {
+        var result = await LocalStorage.GetAsync<string>("token");
+        return result.Success ? result.Value : null;
+    }
+
+    private async Task RefreshAndScrollAsync(int delay = 50)
+    {
+        await InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            await Task.Delay(delay);
+            await ScrollToBottomAsync();
+        });
+    }
+
+    private async Task ScrollToBottomAsync() =>
+        await JS.InvokeVoidAsync("scrollToBottom", "message-container");
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+            await _hubConnection.DisposeAsync();
+    }
+}

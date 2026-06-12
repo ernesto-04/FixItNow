@@ -1,0 +1,376 @@
+﻿@page "/edit-profile"
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians
+@using FixItNow.Web.ApiServices
+
+@inject TechnicianApiService TechnicianApiService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div>
+
+    @if (_isLoading)
+    {
+        <div style="display:flex; align-items:center; justify-content:center; min-height:60vh;">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <div style="max-width:640px; margin:0 auto; padding:40px 48px;">
+
+            <h1 style="font-size:32px; font-weight:800; color:var(--text);
+                           letter-spacing:-0.8px; margin-bottom:6px;">
+                Edit Profile
+            </h1>
+            <p style="font-size:15px; color:var(--muted); margin-bottom:32px;">
+                Update your marketplace profile to attract more customers
+            </p>
+
+            <!-- PROFILE IMAGE -->
+            <div style="background:#fff; border:1px solid var(--border);
+                border-radius:var(--radius-lg); padding:24px;
+                margin-bottom:20px;">
+
+                <div style="font-size:15px; font-weight:700;
+                    color:var(--text); margin-bottom:16px;">
+                    Profile Photo
+                </div>
+
+                <div style="display:flex; align-items:center; gap:20px;">
+
+                    <!-- AVATAR PREVIEW -->
+                    <div style="width:80px; height:80px; border-radius:50%;
+                        background:linear-gradient(135deg, var(--green), var(--green-dark));
+                        color:white; display:flex; align-items:center;
+                        justify-content:center; font-size:28px; font-weight:700;
+                        flex-shrink:0; overflow:hidden; position:relative;
+                        border:3px solid var(--border);">
+                        @if (!string.IsNullOrWhiteSpace(_form.ProfileImageUrl)
+                                            && Uri.IsWellFormedUriString(
+                                            _form.ProfileImageUrl, UriKind.Absolute))
+                        {
+                            <img src="@_form.ProfileImageUrl"
+                                 style="width:100%; height:100%; object-fit:cover;"
+                                 alt="Profile" />
+                        }
+                        else
+                        {
+                            <span>👤</span>
+                        }
+
+                        @if (_isUploadingImage)
+                        {
+                            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.5);
+                                    display:flex; align-items:center; justify-content:center;">
+                                <MudProgressCircular Size="Size.Small"
+                                                     Indeterminate="true"
+                                                     Color="Color.Surface" />
+                            </div>
+                        }
+                    </div>
+
+                    <!-- UPLOAD AREA -->
+                    <div style="flex:1;">
+                        <div style="font-size:13px; font-weight:600;
+                            color:var(--text); margin-bottom:4px;">
+                            Upload a photo
+                        </div>
+                        <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">
+                            JPG, PNG or WebP · Max 5MB
+                        </div>
+
+                        <label style="display:inline-flex; align-items:center; gap:8px;
+                              padding:10px 18px; background:#f5f5f5;
+                              border:1.5px dashed var(--border);
+                              border-radius:var(--radius-md); cursor:pointer;
+                              font-size:13px; font-weight:600; color:var(--text);
+                              transition:all .15s ease;"
+                               onmouseover="this.style.borderColor='var(--green)'; this.style.background='var(--green-light)'"
+                               onmouseout="this.style.borderColor='var(--border)'; this.style.background='#f5f5f5'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            Choose Photo
+                            <InputFile OnChange="HandleImageUpload"
+                                       accept=".jpg,.jpeg,.png,.webp"
+                                       style="display:none;" />
+                        </label>
+
+                        @if (!string.IsNullOrWhiteSpace(_uploadError))
+                        {
+                            <div style="font-size:12px; color:#ef4444; margin-top:8px;">
+                                @_uploadError
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(_form.ProfileImageUrl))
+                        {
+                            <button type="button"
+                                    @onclick="RemovePhoto"
+                                    style="display:block; margin-top:8px; background:none;
+                                       border:none; font-size:12px; color:#ef4444;
+                                       cursor:pointer; font-family:inherit; padding:0;">
+                                Remove photo
+                            </button>
+                        }
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- FORM CARD -->
+            <div style="background:#fff; border:1px solid var(--border);
+                            border-radius:var(--radius-lg); overflow:hidden;">
+
+                <div style="padding:24px; border-bottom:1px solid var(--border);">
+                    <div style="font-size:15px; font-weight:700;
+                                    color:var(--text); margin-bottom:16px;">
+                        Professional Info
+                    </div>
+
+                    <!-- BIO -->
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:13px; font-weight:600;
+                                          color:var(--text); margin-bottom:6px;">
+                            Bio
+                        </label>
+                        <MudTextField Variant="Variant.Outlined"
+                                      Lines="4"
+                                      @bind-Value="_form.Bio"
+                                      Placeholder="Tell customers about yourself and your experience..."
+                                      FullWidth="true" />
+                    </div>
+
+                    <!-- SKILLS -->
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:13px; font-weight:600;
+                                          color:var(--text); margin-bottom:6px;">
+                            Skills
+                        </label>
+                        <MudTextField Variant="Variant.Outlined"
+                                      @bind-Value="_form.Skills"
+                                      Placeholder="e.g. Plumbing, Electrical, AC Repair"
+                                      FullWidth="true" />
+                        <div style="font-size:12px; color:var(--muted); margin-top:6px;">
+                            Separate skills with commas
+                        </div>
+
+                        <!-- SKILL PREVIEW -->
+                        @if (!string.IsNullOrWhiteSpace(_form.Skills))
+                        {
+                            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+                                @foreach (var skill in _form.Skills.Split(',',
+                                                        StringSplitOptions.TrimEntries |
+                                                        StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <span style="padding:4px 12px; background:#f5f5f5;
+                                                             border-radius:20px; font-size:12px;
+                                                             font-weight:500; color:var(--text);">
+                                        @skill
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- LOCATION -->
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:13px; font-weight:600;
+                                          color:var(--text); margin-bottom:6px;">
+                            Location
+                        </label>
+                        <MudTextField Variant="Variant.Outlined"
+                                      @bind-Value="_form.Location"
+                                      Placeholder="e.g. Kuala Lumpur, Malaysia"
+                                      FullWidth="true" />
+                    </div>
+
+                    <!-- YEARS OF EXPERIENCE -->
+                    <div>
+                        <label style="display:block; font-size:13px; font-weight:600;
+                                          color:var(--text); margin-bottom:6px;">
+                            Years of Experience
+                        </label>
+                        <MudNumericField T="int"
+                                         Variant="Variant.Outlined"
+                                         @bind-Value="_form.YearsExperience"
+                                         Min="0"
+                                         Max="50"
+                                         FullWidth="true" />
+                    </div>
+
+                    <!-- HOURLY RATE -->
+                    <div style="margin-top:20px;">
+                        <label style="display:block; font-size:13px; font-weight:600;
+                          color:var(--text); margin-bottom:6px;">
+                            Hourly Rate (Rp)
+                        </label>
+                        <MudNumericField T="decimal?"
+                                         Variant="Variant.Outlined"
+                                         @bind-Value="_form.HourlyRate"
+                                         Min="0"
+                                         Placeholder="e.g. 50000"
+                                         Format="N0"
+                                         FullWidth="true" />
+                        <div style="font-size:12px; color:var(--muted); margin-top:6px;">
+                            Leave blank if your rate is negotiable
+                        </div>
+                    </div>
+
+                    <!-- CALL-OUT FEE -->
+                    <div style="margin-top:20px;">
+                        <label style="display:block; font-size:13px; font-weight:600;
+                          color:var(--text); margin-bottom:6px;">
+                            Call-out Fee (Rp)
+                        </label>
+                        <MudNumericField T="decimal?"
+                                         Variant="Variant.Outlined"
+                                         @bind-Value="_form.CallOutFee"
+                                         Min="0"
+                                         Placeholder="e.g. 20000"
+                                         Format="N0"
+                                         FullWidth="true" />
+                        <div style="font-size:12px; color:var(--muted); margin-top:6px;">
+                            Fixed fee for visiting the customer's location
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- SAVE BUTTON -->
+                <div style="padding:20px 24px; background:#fafafa;">
+                    <button class="btn btn-primary"
+                            style="width:100%; justify-content:center;
+                                       padding:14px; font-size:15px;"
+                            disabled="@_isSaving"
+                            @onclick="SaveAsync">
+                        @if (_isSaving)
+                        {
+                            <MudProgressCircular Size="Size.Small"
+                                                 Indeterminate="true"
+                                                 Class="mr-2" />
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Save Profile</span>
+                        }
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    private UpdateTechnicianProfileDto _form = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _isUploadingImage;
+    private string? _uploadError;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
+        if (claim is not null)
+        {
+            var userId = int.Parse(claim.Value);
+            var profile = await TechnicianApiService.GetTechnicianByIdAsync(userId);
+            if (profile is not null)
+            {
+                _form.Bio = profile.Bio;
+                _form.Skills = profile.Skills;
+                _form.Location = profile.Location;
+                _form.YearsExperience = profile.YearsExperience;
+                _form.ProfileImageUrl = profile.ProfileImageUrl;
+                _form.HourlyRate = profile.HourlyRate;
+                _form.CallOutFee = profile.CallOutFee;
+            }
+        }
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            _uploadError = "File is too large. Max 5MB.";
+            return;
+        }
+
+        var allowed = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowed.Contains(file.ContentType))
+        {
+            _uploadError = "Only JPG, PNG and WebP files are allowed.";
+            return;
+        }
+
+        _isUploadingImage = true;
+        _uploadError = null;
+        StateHasChanged();
+
+        try
+        {
+            var url = await TechnicianApiService.UploadProfileImageAsync(file);
+            if (url is not null)
+                _form.ProfileImageUrl = url;
+            else
+                _uploadError = "Upload failed. Please try again.";
+        }
+        finally
+        {
+            _isUploadingImage = false;
+            StateHasChanged();
+        }
+    }
+
+    private void RemovePhoto()
+    {
+        _form.ProfileImageUrl = string.Empty;
+        // No StateHasChanged needed — Blazor handles sync event callbacks
+    }
+
+    private async Task SaveAsync()
+    {
+        _isSaving = true;
+
+        try
+        {
+            var result = await TechnicianApiService.UpdateProfileAsync(_form);
+            if (result is not null)
+            {
+                Snackbar.Add("Profile updated!", Severity.Success);
+                NavigationManager.NavigateTo($"/technicians/{result.UserId}");
+            }
+            else
+            {
+                Snackbar.Add("Failed to update profile.", Severity.Error);
+            }
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

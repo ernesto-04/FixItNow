@@ -1,0 +1,248 @@
+﻿@page "/login"
+@layout LoginLayout
+
+@inject IAuthenticationService _authService;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider _authStateProvider;
+@inject AppState AppState;
+
+<PageTitle>Sign In — FixItNow</PageTitle>
+
+<div style="min-height:100vh; background:#f7f7f7;
+            display:flex; align-items:center; justify-content:center;
+            padding:24px;">
+
+    <div style="width:100%; max-width:420px;">
+
+        <!-- BRAND -->
+        <div style="text-align:center; margin-bottom:32px;">
+            <div style="display:inline-flex; align-items:center;
+                        gap:8px; margin-bottom:8px;">
+                <div style="width:36px; height:36px; background:var(--green);
+                            border-radius:8px; display:flex; align-items:center;
+                            justify-content:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                         viewBox="0 0 24 24" fill="none" stroke="white"
+                         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                    </svg>
+                </div>
+                <span style="font-size:24px; font-weight:800;
+                             color:var(--text); letter-spacing:-0.5px;">
+                    FixIt<span style="color:var(--green);">Now</span>
+                </span>
+            </div>
+            <div style="font-size:14px; color:var(--muted);">
+                Sign in to your account
+            </div>
+        </div>
+
+        <!-- CARD -->
+        <div style="background:#fff; border:1px solid var(--border);
+                    border-radius:var(--radius-lg); padding:32px;
+                    box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+            @if (_isLoading)
+            {
+                <div style="display:flex; justify-content:center; margin-bottom:20px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                </div>
+            }
+
+            <!-- EMAIL -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">
+                    Email
+                </label>
+                <input type="email"
+                       placeholder="you@example.com"
+                       value="@authRequest.Email"
+                       @oninput="@(e => authRequest.Email = e.Value?.ToString() ?? "")"
+                       @onkeyup="OnPasswordKeyUp"
+                       style="width:100%; padding:12px 16px;
+                              border:1.5px solid var(--border);
+                              border-radius:var(--radius-md);
+                              font-size:14px; font-family:inherit;
+                              outline:none; color:var(--text);
+                              transition:border-color .15s ease;"
+                       onfocus="this.style.borderColor='var(--green)'"
+                       onblur="this.style.borderColor='var(--border)'" />
+            </div>
+
+            <!-- PASSWORD -->
+            <div style="margin-bottom:24px;">
+                <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">
+                    Password
+                </label>
+                <div style="position:relative;">
+                    <input type="@(_passwordInput == InputType.Password ? "password" : "text")"
+                           placeholder="Enter your password"
+                           value="@authRequest.Password"
+                           @oninput="@(e => authRequest.Password = e.Value?.ToString() ?? "")"
+                           @onkeyup="OnPasswordKeyUp"
+                           style="width:100%; padding:12px 48px 12px 16px;
+                                  border:1.5px solid var(--border);
+                                  border-radius:var(--radius-md);
+                                  font-size:14px; font-family:inherit;
+                                  outline:none; color:var(--text);
+                                  transition:border-color .15s ease;"
+                           onfocus="this.style.borderColor='var(--green)'"
+                           onblur="this.style.borderColor='var(--border)'" />
+                    <button type="button"
+                            @onclick="OnShowHidePasswordClick"
+                            style="position:absolute; right:14px; top:50%;
+                                   transform:translateY(-50%); background:none;
+                                   border:none; cursor:pointer; padding:0;
+                                   color:var(--muted); font-size:16px;">
+                        @if (_isShowPassword)
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <!-- ERROR -->
+            @if (!string.IsNullOrWhiteSpace(_pageError))
+            {
+                <div style="background:#FEE2E2; border:1px solid #FCA5A5;
+                                border-radius:var(--radius-md); padding:12px 16px;
+                                font-size:13px; color:#991B1B; margin-bottom:16px;">
+                    @_pageError
+                </div>
+            }
+
+            <!-- SUBMIT -->
+            <button class="btn btn-primary"
+                    style="width:100%; justify-content:center;
+                           padding:14px; font-size:15px;"
+                    disabled="@_isLoading"
+                    @onclick="Authenticate">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small"
+                                         Indeterminate="true"
+                                         Class="mr-2" />
+                    <span>Signing in...</span>
+                }
+                else
+                {
+                    <span>Sign In</span>
+                }
+            </button>
+
+        </div>
+
+        <!-- REGISTER LINK -->
+        <div style="text-align:center; margin-top:20px;
+                    font-size:14px; color:var(--muted);">
+            Don't have an account?
+            <a href="/register"
+               style="color:var(--green); font-weight:600;
+                      text-decoration:none; margin-left:4px;">
+                Join Free
+            </a>
+        </div>
+
+        <!-- VERSION -->
+        <div style="text-align:center; margin-top:24px;
+                    font-size:11px; color:#ccc;">
+            v@_appVersion · © @DateTime.Now.Year FixItNow
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string RedirectUrl { get; set; } = string.Empty;
+    [Parameter] 
+    public IMudDialogInstance? MudDialog { get; set; }
+    [Parameter] 
+    public System.Timers.Timer? SessionCheckerTimer { get; set; }
+
+    AuthRequest authRequest = new();
+    string _pageError = string.Empty;
+    bool _isLoading = false;
+    bool _isShowPassword = false;
+    InputType _passwordInput = InputType.Password;
+    string _appVersion = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _appVersion = System.Reflection.Assembly
+            .GetExecutingAssembly()
+            .GetName().Version?.ToString() ?? string.Empty;
+    }
+
+    void OnShowHidePasswordClick()
+    {
+        _isShowPassword = !_isShowPassword;
+        _passwordInput = _isShowPassword ? InputType.Text : InputType.Password;
+    }
+
+    async Task OnPasswordKeyUp(KeyboardEventArgs args)
+    {
+        if (string.Equals(args?.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+        {
+            await Authenticate();
+        }
+    }
+
+    async Task Authenticate()
+    {
+        try
+        {
+            _pageError = string.Empty;
+
+            _isLoading = true;
+
+            var response = await _authService.LoginAsync(authRequest);
+
+            await ((CustomAuthStateProvider)_authStateProvider)
+                .StartSession(response.Token);
+
+            AppState.SetMode(AppState.CustomerMode);
+
+            if (MudDialog is not null)
+            {
+                MudDialog.Close();
+                SessionCheckerTimer?.Start();
+                return;
+            }
+
+            NavigationManager.NavigateTo(
+                string.IsNullOrWhiteSpace(RedirectUrl) ? "/dashboard" : RedirectUrl,
+                true, true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _pageError = ex.Message;
+        }
+        catch (Exception)
+        {
+            _pageError = "Something went wrong during login.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

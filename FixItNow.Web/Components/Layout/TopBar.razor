@@ -1,0 +1,192 @@
+﻿@using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians
+
+@inject AppState AppState
+@inject NavigationManager NavigationManager
+@inject ProtectedLocalStorage LocalStorage
+@inject UserApiService UserApiService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="topbar-inner" style="width:100%;">
+
+    <!-- BRAND -->
+    <span class="topbar-brand" style="cursor:pointer;"
+          @onclick="@(() => NavigationManager.NavigateTo("/dashboard"))">
+        FixIt<span>Now</span>
+    </span>
+
+    <!-- NAV LINKS -->
+    <nav class="topbar-nav">
+        <NavLink href="/dashboard" Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
+            Home
+        </NavLink>
+        <NavLink href="/technicians" Match="NavLinkMatch.Prefix" class="topbar-link" ActiveClass="active">
+            Browse Technicians
+        </NavLink>
+
+        @if (_isAuthenticated)
+        {
+            <NavLink href="@(AppState.Mode == AppState.CustomerMode ? "/my-bookings" : "/booking-requests")"
+                     Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
+                @(AppState.Mode == AppState.CustomerMode ? "My Requests" : "My Jobs")
+            </NavLink>
+
+            @if (AppState.Mode == AppState.TechnicianMode)
+            {
+                <NavLink href="/edit-profile" Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
+                    Edit Profile
+                </NavLink>
+            }
+        }
+    </nav>
+
+    <MudSpacer />
+
+    <!-- RIGHT SIDE -->
+    @if (_topbarReady)
+    {
+        @if (_isAuthenticated)
+        {
+            @if (_isTechnician)
+            {
+                <div class="topbar-mode-tabs">
+                    <button class="topbar-mode-tab @(AppState.Mode == AppState.CustomerMode ? "active" : "")"
+                            @onclick="@(() => SwitchMode(AppState.CustomerMode))">
+                        Customer
+                    </button>
+                    <button class="topbar-mode-tab @(AppState.Mode == AppState.TechnicianMode ? "active" : "")"
+                            @onclick="@(() => SwitchMode(AppState.TechnicianMode))">
+                        Technician
+                    </button>
+                </div>
+            }
+            else
+            {
+                <button class="btn btn-outline" style="font-size:13px; padding:8px 16px;"
+                        @onclick="@(() => _showTechnicianPanel = true)">
+                    Become a Technician
+                </button>
+            }
+            <Profile />
+        }
+        else
+        {
+            <button class="btn btn-outline" style="font-size:13px; padding:8px 16px;"
+                    @onclick="@(() => NavigationManager.NavigateTo("/login"))">
+                Sign In
+            </button>
+            <button class="btn btn-primary" style="font-size:13px; padding:8px 16px;"
+                    @onclick="@(() => NavigationManager.NavigateTo("/register"))">
+                Join Free
+            </button>
+        }
+    }
+    else
+    {
+        <div style="width:160px; height:36px;"></div>
+    }
+
+</div>
+
+<!-- BECOME TECHNICIAN PANEL -->
+<MudDrawer Anchor="Anchor.End" Width="440px" Elevation="12"
+           Variant="DrawerVariant.Temporary" Class="technician-panel"
+           @bind-Open="_showTechnicianPanel">
+    <div style="padding:32px;">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+            <div>
+                <div style="font-size:20px; font-weight:700; color:var(--text);">Become a Technician</div>
+                <div style="font-size:13px; color:var(--muted); margin-top:4px;">Complete your professional profile</div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           OnClick="@(() => _showTechnicianPanel = false)" />
+        </div>
+
+        <MudTextField Label="Skills" Variant="Variant.Outlined"
+                      @bind-Value="_request.Skills" Class="mb-4"
+                      HelperText="e.g. Plumbing, Electrical, AC Repair" />
+
+        <MudTextField Label="Location" Variant="Variant.Outlined"
+                      @bind-Value="_request.Location" Class="mb-4" />
+
+        <MudTextField Label="Short Bio" Variant="Variant.Outlined"
+                      Lines="4" @bind-Value="_request.Bio" Class="mb-6" />
+
+        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:14px;"
+                disabled="@_isSubmitting" @onclick="SubmitBecomeTechnician">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Submit Application
+        </button>
+
+    </div>
+</MudDrawer>
+
+@code {
+    private bool _showTechnicianPanel;
+    private bool _isSubmitting;
+    private bool _isTechnician;
+    private bool _isAuthenticated;
+    private bool _topbarReady;
+
+    private readonly CreateTechnicianProfileRequest _request = new();
+
+    protected override void OnInitialized() => AppState.OnChange += Refresh;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+
+        if (_isAuthenticated)
+            _isTechnician = await UserApiService.IsTechnicianAsync();
+
+        var savedMode = await LocalStorage.GetAsync<string>("mode");
+        AppState.SetMode(savedMode.Success && !string.IsNullOrWhiteSpace(savedMode.Value)
+            ? savedMode.Value
+            : AppState.CustomerMode);
+
+        _topbarReady = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private async Task SwitchMode(string mode)
+    {
+        await LocalStorage.SetAsync("mode", mode);
+        AppState.SetMode(mode);
+        NavigationManager.NavigateTo("/dashboard", forceLoad: true);
+    }
+
+    private async Task SubmitBecomeTechnician()
+    {
+        _isSubmitting = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
+            if (claim is null) return;
+
+            await UserApiService.BecomeTechnicianAsync(int.Parse(claim.Value), _request);
+
+            _isTechnician = true;
+            _showTechnicianPanel = false;
+            await SwitchMode("technician");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    public void Dispose() => AppState.OnChange -= Refresh;
+}

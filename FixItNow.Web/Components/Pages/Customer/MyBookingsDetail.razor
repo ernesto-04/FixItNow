@@ -1,0 +1,411 @@
+﻿@page "/ticket/{Id:int}"
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Reviews
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Tickets
+@using FixItNow.Domain.Models.BookingRequest.Tickets
+@using FixItNow.Web.ApiServices
+
+@inject TicketApiService TicketApiService
+@inject ReviewApiService ReviewApiService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div>
+
+    @if (_isLoading)
+    {
+        <div style="display:flex; align-items:center;
+                    justify-content:center; min-height:60vh;">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else if (_ticket is null)
+    {
+        <div style="text-align:center; padding:80px 20px;">
+            <div style="font-size:48px; margin-bottom:16px;">😕</div>
+            <div style="font-size:20px; font-weight:700;
+                        color:var(--text); margin-bottom:8px;">
+                Request not found
+            </div>
+            <button class="btn btn-outline"
+                    @onclick="@(() => NavigationManager.NavigateTo("/my-bookings"))">
+                ← Back to My Reqeusts
+            </button>
+        </div>
+    }
+    else
+    {
+        <div style="max-width:720px; margin:0 auto; padding:40px 48px;">
+
+            <!-- BACK -->
+            <button @onclick="@(() => NavigationManager.NavigateTo("/my-bookings"))"
+                    style="display:inline-flex; align-items:center; gap:6px;
+                           background:none; border:none; font-family:inherit;
+                           font-size:14px; color:var(--muted); cursor:pointer;
+                           padding:0; margin-bottom:28px;">
+                ← Back to My Requests
+            </button>
+
+            <!-- HEADER -->
+            <div style="display:flex; align-items:flex-start;
+                        justify-content:space-between; margin-bottom:24px;">
+                <div>
+                    <h1 style="font-size:28px; font-weight:800; color:var(--text);
+                               letter-spacing:-0.5px; margin-bottom:6px;">
+                        @_ticket.Title
+                    </h1>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="badge badge-@_ticket.Status.ToString().ToLower()">
+                            @_ticket.Status
+                        </span>
+                        <span style="font-size:13px; color:var(--muted);">
+                            @_ticket.CreatedAt.ToString("dd MMM yyyy")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IMAGE GALLERY -->
+            @if (_ticket.ImageUrls != null && _ticket.ImageUrls.Any())
+            {
+                <div style="display:grid;
+                            grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+                            gap:12px; margin-bottom:24px;">
+                    @foreach (var image in _ticket.ImageUrls)
+                    {
+                        <img src="@image"
+                             style="width:100%; height:160px; object-fit:cover;
+                                    border-radius:var(--radius-md);
+                                    border:1px solid var(--border);"
+                             alt="Request image" />
+                    }
+                </div>
+            }
+
+            <!-- REQUEST DETAILS CARD -->
+            <div style="background:#fff; border:1px solid var(--border);
+                        border-radius:var(--radius-lg); overflow:hidden;
+                        margin-bottom:20px;">
+
+                <div style="padding:24px; border-bottom:1px solid var(--border);">
+                    <div style="font-size:15px; font-weight:700;
+                                color:var(--text); margin-bottom:16px;">
+                        Request Details
+                    </div>
+
+                    <div style="font-size:14px; color:#484848;
+                                line-height:1.7; margin-bottom:20px;">
+                        @_ticket.Description
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:32px; height:32px; border-radius:var(--radius-sm);
+                                        background:#f5f5f5; display:flex; align-items:center;
+                                        justify-content:center; flex-shrink:0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                     viewBox="0 0 24 24" fill="none" stroke="var(--muted)"
+                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-size:11px; font-weight:600; color:var(--muted);
+                                            text-transform:uppercase; letter-spacing:0.05em;">
+                                    Category
+                                </div>
+                                <div style="font-size:14px; color:var(--text); font-weight:500;">
+                                    @_ticket.Category
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:32px; height:32px; border-radius:var(--radius-sm);
+                                        background:#f5f5f5; display:flex; align-items:center;
+                                        justify-content:center; flex-shrink:0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                     viewBox="0 0 24 24" fill="none" stroke="var(--muted)"
+                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-size:11px; font-weight:600; color:var(--muted);
+                                            text-transform:uppercase; letter-spacing:0.05em;">
+                                    Location
+                                </div>
+                                <div style="font-size:14px; color:var(--text); font-weight:500;">
+                                    @_ticket.Location
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- TECHNICIAN BLOCK -->
+                <div style="padding:20px 24px;">
+                    <div style="font-size:11px; font-weight:600; color:var(--muted);
+                                text-transform:uppercase; letter-spacing:0.05em;
+                                margin-bottom:12px;">
+                        Assigned Technician
+                    </div>
+                    <div style="display:flex; align-items:center;
+                                justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:44px; height:44px; border-radius:50%;
+                                        background:linear-gradient(135deg, var(--green), var(--green-dark));
+                                        color:white; display:flex; align-items:center;
+                                        justify-content:center; font-size:16px;
+                                        font-weight:700; flex-shrink:0;">
+                                @(_ticket.TechnicianName?.FirstOrDefault() ?? '?')
+                            </div>
+                            <div>
+                                <div style="font-size:15px; font-weight:600; color:var(--text);">
+                                    @(_ticket.TechnicianName ?? "Not assigned")
+                                </div>
+                                <div style="font-size:12px; color:var(--muted);">
+                                    Technician
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (_ticket.Status == TicketStatus.Assigned ||
+                             _ticket.Status == TicketStatus.InProgress)
+                        {
+                            <button class="btn btn-outline"
+                                    style="font-size:13px; padding:8px 16px;"
+                                    @onclick="@(() => NavigationManager
+                                        .NavigateTo($"/chat/{_ticket.Id}"))">
+                                💬 Chat
+                            </button>
+                        }
+
+                        @if (_ticket.AssignedTechnicianId.HasValue)
+                        {
+                            <button class="btn btn-outline"
+                                    style="font-size:13px; padding:8px 16px;"
+                                    @onclick="@(() => NavigationManager
+                                        .NavigateTo($"/technicians/{_ticket.AssignedTechnicianId}"))">
+                                View Profile →
+                            </button>
+                        }
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- REVIEW SECTION -->
+            @if (_ticket.Status == TicketStatus.Completed)
+            {
+                <div style="background:#fff; border:1px solid var(--border);
+                            border-radius:var(--radius-lg); overflow:hidden;
+                            margin-bottom:20px;">
+
+                    <div style="padding:24px;">
+
+                        <div style="font-size:15px; font-weight:700;
+                                    color:var(--text); margin-bottom:4px;">
+                            Leave a Review
+                        </div>
+                        <div style="font-size:13px; color:var(--muted);
+                                    margin-bottom:20px;">
+                            How was your experience with @_ticket.TechnicianName?
+                        </div>
+
+                        @if (_hasReviewed)
+                        {
+                            <div style="display:flex; align-items:center; gap:10px;
+                                        background:#f0fdf4; border:1px solid #bbf7d0;
+                                        border-radius:var(--radius-md); padding:14px 16px;">
+                                <span style="font-size:18px;">✓</span>
+                                <span style="font-size:14px; font-weight:600; color:#065f46;">
+                                    You've already reviewed this request
+                                </span>
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- STAR RATING -->
+                            <div style="margin-bottom:16px;">
+                                <div style="font-size:13px; font-weight:600;
+                                            color:var(--text); margin-bottom:8px;">
+                                    Rating
+                                </div>
+                                <div style="display:flex; gap:6px;">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        var star = i;
+                                        <button type="button"
+                                                @onclick="@(() => _rating = star)"
+                                                style="background:none; border:none;
+                                                       cursor:pointer; padding:2px;
+                                                       font-size:28px; line-height:1;
+                                                       transition:transform .1s ease;"
+                                                onmouseover="this.style.transform='scale(1.2)'"
+                                                onmouseout="this.style.transform='scale(1)'">
+                                            <span style="color:@(star <= _rating ? "#f59e0b" : "#e5e5e5");">
+                                                ★
+                                            </span>
+                                        </button>
+                                    }
+                                    @if (_rating > 0)
+                                    {
+                                        <span style="font-size:13px; color:var(--muted);
+                                                     align-self:center; margin-left:6px;">
+                                            @(_rating switch {
+                                                1 => "Poor",
+                                                2 => "Fair",
+                                                3 => "Good",
+                                                4 => "Very Good",
+                                                5 => "Excellent",
+                                                _ => ""
+                                            })
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- COMMENT -->
+                            <div style="margin-bottom:16px;">
+                                <label style="display:block; font-size:13px;
+                                              font-weight:600; color:var(--text);
+                                              margin-bottom:6px;">
+                                    Comment
+                                    <span style="font-weight:400; color:var(--muted);">
+                                        (optional)
+                                    </span>
+                                </label>
+                                <textarea placeholder="Share your experience..."
+                                          @oninput="@(e => _comment = e.Value?.ToString() ?? "")"
+                                          rows="3"
+                                          style="width:100%; padding:12px 16px;
+                                                 border:1.5px solid var(--border);
+                                                 border-radius:var(--radius-md);
+                                                 font-size:14px; font-family:inherit;
+                                                 outline:none; color:var(--text);
+                                                 resize:vertical;
+                                                 transition:border-color .15s ease;"
+                                          onfocus="this.style.borderColor='var(--green)'"
+                                          onblur="this.style.borderColor='var(--border)'">
+                                </textarea>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(_reviewError))
+                            {
+                                <div style="background:#FEE2E2; border:1px solid #FCA5A5;
+                                            border-radius:var(--radius-md); padding:12px 16px;
+                                            font-size:13px; color:#991B1B; margin-bottom:16px;">
+                                    @_reviewError
+                                </div>
+                            }
+
+                            <button class="btn btn-primary"
+                                    style="width:100%; justify-content:center; padding:14px;"
+                                    disabled="@(_isSubmittingReview || _rating == 0)"
+                                    @onclick="SubmitReviewAsync">
+                                @if (_isSubmittingReview)
+                                {
+                                    <MudProgressCircular Size="Size.Small"
+                                                         Indeterminate="true"
+                                                         Class="mr-2" />
+                                    <span>Submitting...</span>
+                                }
+                                else
+                                {
+                                    <span>Submit Review</span>
+                                }
+                            </button>
+
+                            @if (_rating == 0)
+                            {
+                                <div style="text-align:center; margin-top:8px;
+                                            font-size:12px; color:var(--muted);">
+                                    Select a star rating to submit
+                                </div>
+                            }
+                        }
+
+                    </div>
+                </div>
+            }
+
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private CustomerTicketResponse? _ticket;
+    private bool _isLoading = true;
+    private bool _hasReviewed;
+    private bool _isSubmittingReview;
+    private string? _reviewError;
+    private int _rating;
+    private string _comment = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Auth check
+        var authState = await AuthStateProvider
+            .GetAuthenticationStateAsync();
+
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        _ticket = await TicketApiService.GetCustomerTicketAsync(Id);
+
+        if (_ticket?.Status == TicketStatus.Completed)
+            _hasReviewed = await ReviewApiService.HasReviewedAsync(_ticket.Id);
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task SubmitReviewAsync()
+    {
+        if (_rating == 0)
+        {
+            _reviewError = "Please select a star rating.";
+            return;
+        }
+
+        _isSubmittingReview = true;
+        _reviewError = null;
+
+        try
+        {
+            var success = await ReviewApiService.CreateReviewAsync(
+                new CreateReviewRequest
+                {
+                    TicketId = _ticket!.Id,
+                    TechnicianId = _ticket.AssignedTechnicianId!.Value,
+                    Rating = _rating,
+                    Comment = _comment
+                });
+
+            if (success)
+                _hasReviewed = true;
+            else
+                _reviewError = "Failed to submit review. Please try again.";
+        }
+        catch
+        {
+            _reviewError = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _isSubmittingReview = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,34 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="ThemeHelper.Default" />
+<MudPopoverProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Fixed="false" Class="app-topbar" Style="padding:0;">
+        <TopBar />
+    </MudAppBar>
+    <MudMainContent Class="app-content">
+        @if (!_authReady)
+        {
+            <div style="display:flex;align-items:center;justify-content:center;min-height:80vh;">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+            </div>
+        }
+        else
+        {
+            @Body
+        }
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _authReady;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _authReady = true;
+        await InvokeAsync(StateHasChanged);
+    }
+}

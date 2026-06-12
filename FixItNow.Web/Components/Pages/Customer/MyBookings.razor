@@ -1,0 +1,212 @@
+﻿@page "/my-bookings"
+@using FixItNow.Domain.Models.BookingRequest.DTOs.Bookings
+@using FixItNow.Domain.Models.BookingRequest.Tickets
+@using FixItNow.Domain.Models.Bookings
+@using FixItNow.Web.ApiServices
+@using FixItNow.Web.Components.Pages.Customer.Cards
+
+@inject BookingApiService BookingApiService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div>
+
+    @if (_isLoading)
+    {
+        <div style="display:flex; align-items:center;
+                        justify-content:center; min-height:60vh;">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <div style="padding:40px 48px;">
+
+            <h1 style="font-size:32px; font-weight:800; color:var(--text);
+                           letter-spacing:-0.8px; margin-bottom:32px;">
+                My Requests
+            </h1>
+
+            <!-- TABS -->
+            <div style="display:flex; gap:0; border-bottom:1px solid var(--border);
+                            margin-bottom:32px;">
+                @foreach (var tab in new[] { "Active", "Pending", "History" })
+                {
+                    <button @onclick="@(() => _activeTab = tab)"
+                            style="padding:12px 24px; background:none; border:none;
+                                           font-family:inherit; font-size:15px; cursor:pointer;
+                                           font-weight:@(_activeTab == tab ? "700" : "500");
+                                           color:@(_activeTab == tab ? "var(--text)" : "var(--muted)");
+                                           border-bottom:2px solid @(_activeTab == tab ? "var(--text)" : "transparent");
+                                           margin-bottom:-1px; transition:all .15s ease;">
+                        @tab
+                        @{
+                            var count = tab switch
+                            {
+                                "Active" => _active.Count,
+                                "Pending" => _pending.Count,
+                                "History" => _history.Count,
+                                _ => 0
+                            };
+                        }
+                        @if (count > 0)
+                        {
+                            <span style="margin-left:6px; background:@(_activeTab == tab ? "var(--text)" : "#e5e5e5");
+                                                     color:@(_activeTab == tab ? "white" : "var(--muted)");
+                                                     border-radius:20px; padding:2px 8px;
+                                                     font-size:11px; font-weight:600;">
+                                @count
+                            </span>
+                        }
+                    </button>
+                }
+            </div>
+
+            <!-- ACTIVE TAB -->
+            @if (_activeTab == TabActive)
+            {
+                @if (_active.Count == 0)
+                {
+                    <div style="text-align:center; padding:80px 20px;
+                                border:1px solid var(--border);
+                                border-radius:var(--radius-lg);">
+                        <div style="font-size:48px; margin-bottom:16px;">🔧</div>
+                        <div style="font-size:18px; font-weight:700; color:var(--text); margin-bottom:8px;">
+                            No Active Requests
+                        </div>
+                        <div style="font-size:14px; color:var(--muted);">
+                            Requests appear here once a technician accepts your booking.
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        @foreach (var booking in _active)
+                        {
+                            <BookingCard Booking="booking" OnCancelled="ReloadBookingsAsync" />
+                        }
+                    </div>
+                }
+            }
+
+            @if (_activeTab == TabPending)
+            {
+                @if (_pending.Count == 0)
+                {
+                    <div style="text-align:center; padding:80px 20px;
+                                border:1px solid var(--border);
+                                border-radius:var(--radius-lg);">
+                        <div style="font-size:48px; margin-bottom:16px;">📋</div>
+                        <div style="font-size:18px; font-weight:700; color:var(--text); margin-bottom:8px;">
+                            No Pending Requests
+                        </div>
+                        <div style="font-size:14px; color:var(--muted); margin-bottom:24px;">
+                            Send a booking request to get started.
+                        </div>
+                        <button class="btn btn-primary"
+                                @onclick="@(() => NavigationManager.NavigateTo("/technicians"))">
+                            Browse Technicians
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        @foreach (var booking in _pending)
+                        {
+                            <BookingCard Booking="booking" OnCancelled="ReloadBookingsAsync" />
+                        }
+                    </div>
+                }
+            }
+
+            @if (_activeTab == TabHistory)
+            {
+                @if (_history.Count == 0)
+                {
+                    <div style="text-align:center; padding:80px 20px;
+                                border:1px solid var(--border);
+                                border-radius:var(--radius-lg);">
+                        <div style="font-size:48px; margin-bottom:16px;">📅</div>
+                        <div style="font-size:18px; font-weight:700; color:var(--text); margin-bottom:8px;">
+                            No History Yet
+                        </div>
+                        <div style="font-size:14px; color:var(--muted);">
+                            Completed and declined bookings will appear here.
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        @foreach (var booking in _history)
+                        {
+                            <BookingCard Booking="booking" OnCancelled="ReloadBookingsAsync" />
+                        }
+                    </div>
+                }
+            }
+
+        </div>
+    }
+
+</div>
+
+@code {
+
+    private List<BookingRequestDto> _active = [];
+    private List<BookingRequestDto> _pending = [];
+    private List<BookingRequestDto> _history = [];
+
+    private bool _isLoading = true;
+
+    private const string TabActive = "Active";
+    private const string TabPending = "Pending";
+    private const string TabHistory = "History";
+
+    private string _activeTab = TabActive;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        var bookings = await BookingApiService.GetCustomerBookingsAsync();
+        SplitBookings(bookings);
+        _isLoading = false;
+
+        StateHasChanged();
+    }
+
+    private void SplitBookings(List<BookingRequestDto> bookings)
+    {
+        _active = bookings.Where(b =>
+            b.Status == BookingStatus.Accepted &&
+            b.TicketStatus != TicketStatus.Completed &&
+            b.TicketStatus != TicketStatus.Cancelled).ToList();
+
+        _pending = bookings.Where(b =>
+            b.Status == BookingStatus.Pending).ToList();
+
+        _history = bookings.Where(b =>
+            b.Status == BookingStatus.Declined ||
+            b.Status == BookingStatus.Cancelled ||
+            (b.Status == BookingStatus.Accepted &&
+             (b.TicketStatus == TicketStatus.Completed ||
+              b.TicketStatus == TicketStatus.Cancelled))).ToList();
+    }
+
+    private async Task ReloadBookingsAsync()
+    {
+        var bookings = await BookingApiService.GetCustomerBookingsAsync();
+        SplitBookings(bookings);
+        StateHasChanged();
+    }
+}

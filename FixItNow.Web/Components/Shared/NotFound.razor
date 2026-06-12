@@ -1,0 +1,18 @@
+﻿@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-12 text-center">
+    <MudIcon Icon="@Icons.Material.Filled.SearchOff"
+             Style="font-size:80px; color: var(--mud-palette-primary);"
+             Class="mb-4" />
+    <MudText Typo="Typo.h4" Class="mb-2">Page Not Found</MudText>
+    <MudText Typo="Typo.body1"
+             Color="Color.Secondary"
+             Class="mb-6">
+        The page you're looking for doesn't exist or has been moved.
+    </MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               OnClick="@(() => NavigationManager.NavigateTo("/dashboard"))">
+        Back to Dashboard
+    </MudButton>
+</MudContainer>

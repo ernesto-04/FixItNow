@@ -1,0 +1,94 @@
+﻿@using FixItNow.Domain.Models.BookingRequest.DTOs.Bookings
+
+<div style="background:#fff; border:1px solid var(--border);
+            border-radius:var(--radius-lg); overflow:hidden;
+            display:flex; transition:box-shadow .2s ease;"
+     onmouseover="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.10)'"
+     onmouseout="this.style.boxShadow='none'">
+
+    <!-- LEFT BAND -->
+    <div style="width:200px; min-width:200px; height:180px;
+                background:linear-gradient(135deg,#1a1a2e,#0d4f3c);
+                display:flex; align-items:center; justify-content:center;
+                flex-shrink:0;">
+        <div style="text-align:center;">
+            <div style="font-size:36px; margin-bottom:8px;">
+                @TextHelper.GetCategoryEmoji(Booking.Category)
+            </div>
+            <div style="font-size:12px; font-weight:600;
+                        color:rgba(255,255,255,0.85);
+                        text-transform:uppercase; letter-spacing:0.05em;">
+                @Booking.Category
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div style="flex:1; padding:20px 24px; display:flex;
+                flex-direction:column; justify-content:space-between;">
+        <div>
+            <div style="display:flex; align-items:flex-start;
+                        justify-content:space-between; margin-bottom:6px;">
+                <div style="font-size:18px; font-weight:700;
+                            color:var(--text); letter-spacing:-0.2px;">
+                    @TextHelper.Shorten(Booking.Title)
+                </div>
+                <span class="badge badge-pending"
+                      style="flex-shrink:0; margin-left:12px;">
+                    Pending
+                </span>
+            </div>
+            <div style="font-size:14px; color:var(--muted); margin-bottom:12px;">
+                @Booking.CustomerName · @Booking.CreatedAt.ToString("dd MMM yyyy")
+            </div>
+            <div style="font-size:13px; color:var(--muted);
+                        display:flex; align-items:center; gap:6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                @Booking.Location
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Booking.Description))
+            {
+                <div style="font-size:13px; color:var(--muted);
+                                margin-top:10px; line-height:1.5;">
+                    @TextHelper.Shorten(Booking.Description)
+                </div>
+            }
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px;
+                    margin-top:16px; padding-top:16px;
+                    border-top:1px solid var(--border);">
+            <button class="btn btn-success"
+                    style="flex:1; justify-content:center;"
+                    disabled="@IsProcessing"
+                    @onclick="OnAccept">
+                @if (IsProcessing)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                }
+                else
+                {
+                    <span>✓ Accept</span>
+                }
+            </button>
+            <button class="btn btn-danger-outline"
+                    style="flex:1; justify-content:center;"
+                    disabled="@IsProcessing"
+                    @onclick="OnDecline">
+                ✕ Decline
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public BookingRequestDto Booking { get; set; } = default!;
+    [Parameter] public bool IsProcessing { get; set; }
+    [Parameter] public EventCallback OnAccept { get; set; }
+    [Parameter] public EventCallback OnDecline { get; set; }
+}

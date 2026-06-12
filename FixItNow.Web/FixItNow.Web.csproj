@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.29.0" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="8.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.19" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.14" />
+    <PackageReference Include="MudBlazor" Version="8.9.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FixItNow.Application\FixItNow.Application.csproj" />
+    <ProjectReference Include="..\FixItNow.Domain\FixItNow.Domain.csproj" />
+    <ProjectReference Include="..\FixItNow.Infrastructure\FixItNow.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\tickets\" />
+  </ItemGroup>
+
+</Project>

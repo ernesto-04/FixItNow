@@ -1,0 +1,14 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="ThemeHelper.Default" />
+<MudPopoverProvider />
+<MudDialogProvider FullWidth="true" BackdropClick="false" />
+<MudSnackbarProvider />
+
+<div class="login-outer">
+    <div class="login-middle">
+        <div class="login-inner">
+            @Body
+        </div>
+    </div>
+</div>

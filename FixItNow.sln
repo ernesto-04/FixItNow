@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37027.9
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixItNow.Web", "FixItNow.Web\FixItNow.Web.csproj", "{7780880B-479B-47B3-9F93-5E04318119E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixItNow.Application", "FixItNow.Application\FixItNow.Application.csproj", "{49C52C81-F476-4F50-A9C5-453E4BC6B1E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixItNow.Infrastructure", "FixItNow.Infrastructure\FixItNow.Infrastructure.csproj", "{419C1BF0-A368-4258-A217-05AE16DF5A7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixItNow.Domain", "FixItNow.Domain\FixItNow.Domain.csproj", "{EBD7328B-EDA4-4CD0-9077-84FC45DF590A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "00. Presentation Layer", "00. Presentation Layer", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "01. Application Layer", "01. Application Layer", "{9DFCE3F7-B447-4BA7-B943-84D19B23B87D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "02. Infrastructure Layer", "02. Infrastructure Layer", "{9F61EED5-7613-49B5-A9BB-1A4B24BDC9C6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03. Domain Layer", "03. Domain Layer", "{102E34E8-B904-44CD-9DE0-C6B93A9E7912}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "04. Test Layer", "04. Test Layer", "{2A4CF0E7-FDA6-47B7-B704-E0ABA02278B4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7780880B-479B-47B3-9F93-5E04318119E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7780880B-479B-47B3-9F93-5E04318119E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7780880B-479B-47B3-9F93-5E04318119E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7780880B-479B-47B3-9F93-5E04318119E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49C52C81-F476-4F50-A9C5-453E4BC6B1E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49C52C81-F476-4F50-A9C5-453E4BC6B1E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49C52C81-F476-4F50-A9C5-453E4BC6B1E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49C52C81-F476-4F50-A9C5-453E4BC6B1E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{419C1BF0-A368-4258-A217-05AE16DF5A7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{419C1BF0-A368-4258-A217-05AE16DF5A7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{419C1BF0-A368-4258-A217-05AE16DF5A7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{419C1BF0-A368-4258-A217-05AE16DF5A7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBD7328B-EDA4-4CD0-9077-84FC45DF590A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBD7328B-EDA4-4CD0-9077-84FC45DF590A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBD7328B-EDA4-4CD0-9077-84FC45DF590A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBD7328B-EDA4-4CD0-9077-84FC45DF590A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7780880B-479B-47B3-9F93-5E04318119E6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{49C52C81-F476-4F50-A9C5-453E4BC6B1E5} = {9DFCE3F7-B447-4BA7-B943-84D19B23B87D}
+		{419C1BF0-A368-4258-A217-05AE16DF5A7D} = {9F61EED5-7613-49B5-A9BB-1A4B24BDC9C6}
+		{EBD7328B-EDA4-4CD0-9077-84FC45DF590A} = {102E34E8-B904-44CD-9DE0-C6B93A9E7912}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1615CCBB-7ABD-40DA-876D-D6CC3AC8AD5B}
+	EndGlobalSection
+EndGlobal

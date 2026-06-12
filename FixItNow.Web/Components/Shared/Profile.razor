@@ -1,0 +1,160 @@
+﻿@using FixItNow.Web.ApiServices
+@inject AppState AppState
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Nav
+@inject TechnicianApiService TechnicianApiService
+
+<MudMenu AnchorOrigin="Origin.BottomRight"
+         TransformOrigin="Origin.TopRight">
+
+    <ActivatorContent>
+        <div style="width:36px; height:36px; border-radius:50%;
+                    background:linear-gradient(135deg, var(--green), var(--green-dark));
+                    color:white; display:flex; align-items:center;
+                    justify-content:center; font-size:14px; font-weight:700;
+                    cursor:pointer; overflow:hidden; flex-shrink:0;
+                    border:2px solid var(--border);">
+            @if (!string.IsNullOrWhiteSpace(_profileImageUrl)
+                        && Uri.IsWellFormedUriString(
+                        _profileImageUrl, UriKind.Absolute))
+            {
+                <img src="@_profileImageUrl"
+                     style="width:100%; height:100%; object-fit:cover;"
+                     alt="@_userName" />
+            }
+            else
+            {
+                @(_userName.FirstOrDefault().ToString().ToUpper())
+            }
+        </div>
+    </ActivatorContent>
+
+    <ChildContent>
+
+        <!-- USER INFO -->
+        <div style="padding:12px 16px;
+                    border-bottom:1px solid var(--border);
+                    min-width:200px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:40px; height:40px; border-radius:50%;
+                            background:linear-gradient(135deg, var(--green), var(--green-dark));
+                            color:white; display:flex; align-items:center;
+                            justify-content:center; font-size:15px; font-weight:700;
+                            overflow:hidden; flex-shrink:0;">
+                    @if (!string.IsNullOrWhiteSpace(_profileImageUrl)
+                                        && Uri.IsWellFormedUriString(
+                                        _profileImageUrl, UriKind.Absolute))
+                    {
+                        <img src="@_profileImageUrl"
+                             style="width:100%; height:100%; object-fit:cover;"
+                             alt="@_userName" />
+                    }
+                    else
+                    {
+                        @(_userName.FirstOrDefault().ToString().ToUpper())
+                    }
+                </div>
+                <div>
+                    <div style="font-size:14px; font-weight:600; color:var(--text);">
+                        @_userName
+                    </div>
+                    <div style="font-size:12px; color:var(--muted);">
+                        @(AppState.Mode == AppState.TechnicianMode ? "Technician" : AppState.CustomerMode)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MENU ITEMS -->
+        @if (AppState.Mode == AppState.TechnicianMode)
+        {
+            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/edit-profile"))">
+                <div style="display:flex; align-items:center; gap:10px;
+                                font-size:14px; color:var(--text); padding:2px 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+                         viewBox="0 0 24 24" fill="none" stroke="var(--muted)"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Edit Profile
+                </div>
+            </MudMenuItem>
+        }
+
+        <MudMenuItem OnClick="@(() => Nav.NavigateTo("/my-bookings"))">
+            <div style="display:flex; align-items:center; gap:10px;
+                        font-size:14px; color:var(--text); padding:2px 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+                     viewBox="0 0 24 24" fill="none" stroke="var(--muted)"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                My Jobs
+            </div>
+        </MudMenuItem>
+
+        <MudDivider />
+
+        <MudMenuItem OnClick="OnLogoutClicked">
+            <div style="display:flex; align-items:center; gap:10px;
+                        font-size:14px; color:#ef4444; padding:2px 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+                     viewBox="0 0 24 24" fill="none" stroke="#ef4444"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign Out
+            </div>
+        </MudMenuItem>
+
+    </ChildContent>
+
+</MudMenu>
+
+@code {
+
+    private string _userName = "User";
+    private string _profileImageUrl = string.Empty;
+    private int _userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider
+            .GetAuthenticationStateAsync();
+
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+            return;
+
+        _userName = user
+            .FindFirst(System.Security.Claims.ClaimTypes.Name)
+            ?.Value ?? "User";
+
+        var claim = user
+            .FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+            ?.Value;
+
+        if (int.TryParse(claim, out _userId))
+        {
+            var profile = await TechnicianApiService
+                .GetTechnicianByIdAsync(_userId);
+
+            if (profile is not null)
+                _profileImageUrl = profile.ProfileImageUrl ?? string.Empty;
+        }
+    }
+
+    private async Task OnLogoutClicked()
+    {
+        await ((CustomAuthStateProvider)AuthProvider).EndSession();
+        AppState.SetMode(AppState.CustomerMode);
+        Nav.NavigateTo("/dashboard", forceLoad: true);
+    }
+}

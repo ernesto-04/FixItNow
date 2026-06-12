@@ -1,0 +1,265 @@
+﻿@page "/register"
+@layout LoginLayout
+
+@inject IAuthenticationService _authService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Account — FixItNow</PageTitle>
+
+<div style="min-height:100vh; background:#f7f7f7;
+            display:flex; align-items:center; justify-content:center;
+            padding:24px;">
+
+    <div style="width:100%; max-width:440px;">
+
+        <!-- BRAND -->
+        <div style="text-align:center; margin-bottom:32px;">
+            <div style="display:inline-flex; align-items:center;
+                        gap:8px; margin-bottom:8px;">
+                <div style="width:36px; height:36px; background:var(--green);
+                            border-radius:8px; display:flex; align-items:center;
+                            justify-content:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                         viewBox="0 0 24 24" fill="none" stroke="white"
+                         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                    </svg>
+                </div>
+                <span style="font-size:24px; font-weight:800;
+                             color:var(--text); letter-spacing:-0.5px;">
+                    FixIt<span style="color:var(--green);">Now</span>
+                </span>
+            </div>
+            <div style="font-size:14px; color:var(--muted);">
+                Create your free account
+            </div>
+        </div>
+
+        <!-- CARD -->
+        <div style="background:#fff; border:1px solid var(--border);
+                    border-radius:var(--radius-lg); padding:32px;
+                    box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+            @if (_isLoading)
+            {
+                <div style="display:flex; justify-content:center; margin-bottom:20px;">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                </div>
+            }
+
+            <!-- FULL NAME -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">
+                    Full Name
+                </label>
+                <input type="text"
+                       placeholder="Your full name"
+                       value="@registerRequest.FullName"
+                       @oninput="@(e => registerRequest.FullName = e.Value?.ToString() ?? "")"
+                       style="width:100%; padding:12px 16px;
+                              border:1.5px solid var(--border);
+                              border-radius:var(--radius-md);
+                              font-size:14px; font-family:inherit;
+                              outline:none; color:var(--text);
+                              transition:border-color .15s ease;"
+                       onfocus="this.style.borderColor='var(--green)'"
+                       onblur="this.style.borderColor='var(--border)'" />
+            </div>
+
+            <!-- USERNAME -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">
+                    Username
+                </label>
+                <input type="text"
+                       placeholder="Choose a username"
+                       value="@registerRequest.Username"
+                       @oninput="@(e => registerRequest.Username = e.Value?.ToString() ?? "")"
+                       style="width:100%; padding:12px 16px;
+                              border:1.5px solid var(--border);
+                              border-radius:var(--radius-md);
+                              font-size:14px; font-family:inherit;
+                              outline:none; color:var(--text);
+                              transition:border-color .15s ease;"
+                       onfocus="this.style.borderColor='var(--green)'"
+                       onblur="this.style.borderColor='var(--border)'" />
+            </div>
+
+            <!-- EMAIL -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">
+                    Email
+                </label>
+                <input type="email"
+                       placeholder="you@example.com"
+                       value="@registerRequest.Email"
+                       @oninput="@(e => registerRequest.Email = e.Value?.ToString() ?? "")"
+                       style="width:100%; padding:12px 16px;
+                              border:1.5px solid var(--border);
+                              border-radius:var(--radius-md);
+                              font-size:14px; font-family:inherit;
+                              outline:none; color:var(--text);
+                              transition:border-color .15s ease;"
+                       onfocus="this.style.borderColor='var(--green)'"
+                       onblur="this.style.borderColor='var(--border)'" />
+            </div>
+
+            <!-- PASSWORD -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">
+                    Password
+                </label>
+                <div style="position:relative;">
+                    <input type="@(_passwordInput == InputType.Password ? "password" : "text")"
+                           placeholder="Create a password"
+                           value="@registerRequest.Password"
+                           @oninput="@(e => registerRequest.Password = e.Value?.ToString() ?? "")"
+                           style="width:100%; padding:12px 48px 12px 16px;
+                                  border:1.5px solid var(--border);
+                                  border-radius:var(--radius-md);
+                                  font-size:14px; font-family:inherit;
+                                  outline:none; color:var(--text);
+                                  transition:border-color .15s ease;"
+                           onfocus="this.style.borderColor='var(--green)'"
+                           onblur="this.style.borderColor='var(--border)'" />
+                    <button type="button"
+                            @onclick="OnShowHidePasswordClick"
+                            style="position:absolute; right:14px; top:50%;
+                                   transform:translateY(-50%); background:none;
+                                   border:none; cursor:pointer; padding:0;
+                                   color:var(--muted);">
+                        @if (_isShowPassword)
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONFIRM PASSWORD -->
+            <div style="margin-bottom:24px;">
+                <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">
+                    Confirm Password
+                </label>
+                <input type="@(_passwordInput == InputType.Password ? "password" : "text")"
+                       placeholder="Repeat your password"
+                       value="@confirmPassword"
+                       @oninput="@(e => confirmPassword = e.Value?.ToString() ?? "")"
+                       style="width:100%; padding:12px 16px;
+                              border:1.5px solid var(--border);
+                              border-radius:var(--radius-md);
+                              font-size:14px; font-family:inherit;
+                              outline:none; color:var(--text);
+                              transition:border-color .15s ease;"
+                       onfocus="this.style.borderColor='var(--green)'"
+                       onblur="this.style.borderColor='var(--border)'" />
+            </div>
+
+            <!-- ERROR -->
+            @if (!string.IsNullOrWhiteSpace(_pageError))
+            {
+                <div style="background:#FEE2E2; border:1px solid #FCA5A5;
+                                border-radius:var(--radius-md); padding:12px 16px;
+                                font-size:13px; color:#991B1B; margin-bottom:16px;">
+                    @_pageError
+                </div>
+            }
+
+            <!-- SUBMIT -->
+            <button class="btn btn-primary"
+                    style="width:100%; justify-content:center;
+                           padding:14px; font-size:15px;"
+                    disabled="@_isLoading"
+                    @onclick="RegisterAsync">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small"
+                                         Indeterminate="true"
+                                         Class="mr-2" />
+                    <span>Creating account...</span>
+                }
+                else
+                {
+                    <span>Create Account</span>
+                }
+            </button>
+
+        </div>
+
+        <!-- LOGIN LINK -->
+        <div style="text-align:center; margin-top:20px;
+                    font-size:14px; color:var(--muted);">
+            Already have an account?
+            <a href="/login"
+               style="color:var(--green); font-weight:600;
+                      text-decoration:none; margin-left:4px;">
+                Sign In
+            </a>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private RegisterRequest registerRequest = new();
+    private string confirmPassword = string.Empty;
+    private bool _isLoading = false;
+    private string _pageError = string.Empty;
+    private bool _isShowPassword = false;
+    private InputType _passwordInput = InputType.Password;
+
+    private void OnShowHidePasswordClick()
+    {
+        _isShowPassword = !_isShowPassword;
+        _passwordInput = _isShowPassword ? InputType.Text : InputType.Password;
+    }
+
+    private async Task RegisterAsync()
+    {
+        _pageError = string.Empty;
+
+        if (registerRequest.Password != confirmPassword)
+        {
+            _pageError = "Passwords do not match.";
+            return;
+        }
+
+        try
+        {
+            _isLoading = true;
+            await _authService.RegisterAsync(registerRequest);
+            NavigationManager.NavigateTo("/login", true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _pageError = ex.Message;
+        }
+        catch (Exception)
+        {
+            _pageError = "Something went wrong.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

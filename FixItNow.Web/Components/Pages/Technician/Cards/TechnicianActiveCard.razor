@@ -1,0 +1,28 @@
+﻿@using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians
+
+@if (Technician.IsOnline)
+{
+    <MudChip T="string"
+             Size="Size.Small"
+             Color="Color.Success"
+             Variant="Variant.Filled"
+             Class="ml-1"
+             Style="height:20px;font-size:11px;padding:0 6px">
+        Online
+    </MudChip>
+}
+else
+{
+    <MudChip T="string"
+             Size="Size.Small"
+             Color="Color.Default"
+             Variant="Variant.Outlined"
+             Class="ml-1"
+             Style="height:20px;font-size:11px;padding:0 6px;opacity:0.5">
+        Offline
+    </MudChip>
+}
+
+@code{
+    [Parameter] public TechnicianProfileDto Technician { get; set; } = default!;
+}

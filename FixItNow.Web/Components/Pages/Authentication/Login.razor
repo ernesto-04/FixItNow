@@ -230,7 +230,7 @@
 
             NavigationManager.NavigateTo(
                 string.IsNullOrWhiteSpace(RedirectUrl) ? "/dashboard" : RedirectUrl,
-                true, true);
+                forceLoad: true);
         }
         catch (InvalidOperationException ex)
         {

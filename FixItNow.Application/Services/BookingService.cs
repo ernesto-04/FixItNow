@@ -39,6 +39,12 @@ public class BookingService : IBookingService
         if (duplicate)
             return (false, "You already have a pending booking with this technician.");
 
+        var technicianProfile = await _context.TechnicianProfiles
+            .FirstOrDefaultAsync(t => t.UserId == dto.TechnicianId);
+
+        if (technicianProfile is null || !technicianProfile.IsOnline)
+            return (false, "This technician is currently offline and not accepting bookings.");
+
         _context.BookingRequests.Add(new BookingRequest
         {
             CustomerId = customerId,

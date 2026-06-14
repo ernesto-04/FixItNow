@@ -1,6 +1,7 @@
 ﻿@page "/technicians"
 @using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians
 @using FixItNow.Web.ApiServices
+@using FixItNow.Web.Components.Pages.Technician.Cards
 
 @inject TechnicianApiService TechnicianApiService
 @inject NavigationManager NavigationManager
@@ -193,7 +194,7 @@
 
                         <!-- CARD BODY -->
                         <div class="tech-card-body">
-
+                             <TechnicianActiveCard Technician="tech" />
                             <div class="tech-card-name">@tech.FullName</div>
                             <div class="tech-card-location">📍 @tech.Location</div>
 
@@ -308,7 +309,9 @@
         if (!firstRender)
             return;
 
-        _technicians = await TechnicianApiService.GetAllTechniciansAsync();
+        _technicians = (await TechnicianApiService.GetAllTechniciansAsync())
+         .OrderByDescending(t => t.IsOnline)
+         .ToList();
         ApplyFilters();
         _isLoading = false;
 

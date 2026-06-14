@@ -1,5 +1,7 @@
 ﻿using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians;
+using FixItNow.Domain.Models.DTOs.Technicians;
 using Microsoft.AspNetCore.Components.Forms;
+using static System.Net.WebRequestMethods;
 
 namespace FixItNow.Web.ApiServices;
 
@@ -53,6 +55,15 @@ public class TechnicianApiService
 
         var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
         return result?.ImageUrl;
+    }
+
+    public async Task<bool> SetOnlineStatusAsync(bool isOnline)
+    {
+        var response = await _authService.PatchAsync<SetOnlineStatusDto>(
+            "api/technicians/status",
+            new SetOnlineStatusDto { IsOnline = isOnline });
+
+        return response.IsSuccessStatusCode;
     }
 }
 

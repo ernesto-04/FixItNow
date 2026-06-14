@@ -53,4 +53,10 @@ public class AuthenticatedHttpService
         await AttachTokenAsync();
         return await _httpClient.DeleteAsync(url);
     }
+
+    public async Task<HttpResponseMessage> PatchAsync<T>(string url, T body)
+    {
+        await AttachTokenAsync();
+        return await _httpClient.PatchAsJsonAsync(url, body);
+    }
 }

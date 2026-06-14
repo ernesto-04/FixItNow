@@ -8,6 +8,14 @@
 
     public event Action? OnChange;
 
+    public bool IsTechnicianOnline { get; set; }
+
+    public void SetOnlineStatus(bool isOnline)
+    {
+        IsTechnicianOnline = isOnline;
+        NotifyStateChanged();
+    }
+
     public void SetMode(string mode)
     {
         if (_mode != mode)

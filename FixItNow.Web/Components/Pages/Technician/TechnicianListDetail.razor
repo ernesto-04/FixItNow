@@ -463,8 +463,11 @@
                     background:#fff;">
             <button class="btn btn-primary"
                     style="width:100%; justify-content:center;
-                           padding:16px; font-size:15px;"
-                    disabled="@_isSubmittingBooking"
+               padding:16px; font-size:15px;
+               @(_profile is not null && !_profile.IsOnline
+                                       ? "opacity:0.5; cursor:not-allowed;"
+                                       : "")"
+                    disabled="@(_isSubmittingBooking || (_profile is not null && !_profile.IsOnline))"
                     @onclick="SubmitBookingAsync">
                 @if (_isSubmittingBooking)
                 {
@@ -479,8 +482,17 @@
                 }
             </button>
             <div style="text-align:center; margin-top:10px;
-                        font-size:12px; color:var(--muted);">
-                The technician will confirm or decline your request
+            font-size:12px; color:var(--muted);">
+                @if (_profile is not null && !_profile.IsOnline)
+                {
+                    <span style="color:#991B1B;">
+                        This technician is currently offline and not accepting bookings
+                    </span>
+                }
+                else
+                {
+                    <span>The technician will confirm or decline your request</span>
+                }
             </div>
         </div>
 
@@ -491,6 +503,9 @@
 @code {
     [Parameter]
     public int UserId { get; set; }
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "openBooking")]
+    public bool OpenBooking { get; set; }
 
     private TechnicianProfileDto? _profile;
     private List<ReviewDto> _reviews = [];
@@ -503,16 +518,24 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-
         var profileTask = TechnicianApiService.GetTechnicianByIdAsync(UserId);
         var reviewsTask = ReviewApiService.GetReviewsByTechnicianAsync(UserId);
-
         await Task.WhenAll(profileTask, reviewsTask);
-
         _profile = profileTask.Result;
         _reviews = reviewsTask.Result ?? [];
-
         _isLoading = false;
+
+        if (OpenBooking)
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                _booking = new() { TechnicianId = UserId };
+                _bookingError = null;
+                _showBookingPanel = true;
+            }
+        }
+
         StateHasChanged();
     }
 
@@ -521,12 +544,10 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated != true)
         {
-            NavigationManager.NavigateTo(
-                $"/login?returnUrl=/technicians/{UserId}",
-                forceLoad: false);
+            var returnUrl = Uri.EscapeDataString($"/technicians/{UserId}?openBooking=true");
+            NavigationManager.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: true);
             return;
         }
-
         _booking = new() { TechnicianId = UserId };
         _bookingError = null;
         _showBookingPanel = true;

@@ -5,6 +5,8 @@
 @inject ProtectedLocalStorage LocalStorage
 @inject UserApiService UserApiService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject TechnicianApiService TechnicianApiService
+@inject AppState AppState
 
 <div class="topbar-inner" style="width:100%;">
 
@@ -48,6 +50,12 @@
         {
             @if (_isTechnician)
             {
+                <MudSwitch T="bool"
+                           Value="AppState.IsTechnicianOnline"
+                           ValueChanged="OnToggleOnlineStatus"
+                           Color="Color.Success"
+                           Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
+                           Class="mr-2" />
                 <div class="topbar-mode-tabs">
                     <button class="topbar-mode-tab @(AppState.Mode == AppState.CustomerMode ? "active" : "")"
                             @onclick="@(() => SwitchMode(AppState.CustomerMode))">
@@ -186,6 +194,13 @@
         {
             _isSubmitting = false;
         }
+    }
+
+    private async Task OnToggleOnlineStatus(bool value)
+    {
+        var success = await TechnicianApiService.SetOnlineStatusAsync(value);
+        if (success)
+            AppState.SetOnlineStatus(value);
     }
 
     public void Dispose() => AppState.OnChange -= Refresh;

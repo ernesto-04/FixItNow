@@ -10,6 +10,7 @@ public interface ITechnicianService
     Task<List<TechnicianProfileDto>> GetAllTechniciansAsync(int currentUserId);
     Task<TechnicianProfileDto?> GetTechnicianByIdAsync(int userId);
     Task<TechnicianProfileDto?> UpdateProfileAsync(int userId, UpdateTechnicianProfileDto dto);
+    Task<bool> SetOnlineStatusAsync(int userId, bool isOnline);
 }
 
 public class TechnicianService : ITechnicianService
@@ -42,7 +43,8 @@ public class TechnicianService : ITechnicianService
                     .Where(r => r.TechnicianId == tp.UserId)
                     .Average(r => (double?)r.Rating) ?? 0,
                 HourlyRate = tp.HourlyRate,
-                CallOutFee = tp.CallOutFee
+                CallOutFee = tp.CallOutFee,
+                IsOnline = tp.IsOnline
             })
             .ToListAsync();
     }
@@ -68,7 +70,8 @@ public class TechnicianService : ITechnicianService
                     .Where(r => r.TechnicianId == tp.UserId)
                     .Average(r => (double?)r.Rating) ?? 0,
                 HourlyRate = tp.HourlyRate,
-                CallOutFee = tp.CallOutFee
+                CallOutFee = tp.CallOutFee,
+                IsOnline = tp.IsOnline
             })
             .FirstOrDefaultAsync();
     }
@@ -87,5 +90,18 @@ public class TechnicianService : ITechnicianService
         profile.CallOutFee = dto.CallOutFee;
         await _context.SaveChangesAsync();
         return await GetTechnicianByIdAsync(userId);
+    }
+
+    public async Task<bool> SetOnlineStatusAsync(int userId, bool isOnline)
+    {
+        var profile = await _context.TechnicianProfiles
+            .FirstOrDefaultAsync(t => t.UserId == userId);
+
+        if (profile is null)
+            return false;
+
+        profile.IsOnline = isOnline;
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

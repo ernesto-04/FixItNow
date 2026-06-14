@@ -12,4 +12,5 @@ public class TechnicianProfile
     public string? ProfileImageUrl { get; set; }
     public decimal? HourlyRate { get; set; }
     public decimal? CallOutFee { get; set; }
+    public bool IsOnline { get; set; } = false;
 }

@@ -3,6 +3,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using FixItNow.Application.Services;
 using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians;
+using FixItNow.Domain.Models.DTOs.Technicians;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -93,6 +94,21 @@ public class TechnicianController : ControllerBase
 
         return Ok(new { imageUrl = blobClient.Uri.ToString() });
     }
+
+    [HttpPatch("status")]
+    public async Task<IActionResult> SetOnlineStatus(
+    [FromBody] SetOnlineStatusDto dto,
+    [FromServices] ITechnicianService technicianService)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var success = await technicianService.SetOnlineStatusAsync(userId, dto.IsOnline);
+
+        if (!success)
+            return NotFound("Technician profile not found.");
+
+        return Ok();
+    }
+
     private int GetUserId() =>
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
             ? id

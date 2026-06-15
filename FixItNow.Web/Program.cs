@@ -2,6 +2,7 @@ using FixItNow.Application;
 using FixItNow.Infrastructure;
 using FixItNow.Web;
 using FixItNow.Web.Components;
+using FixItNow.Web.Hubs;
 using FixItNow.Web.Services;
 using Microsoft.EntityFrameworkCore;
 

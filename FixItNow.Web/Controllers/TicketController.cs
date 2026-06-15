@@ -19,13 +19,6 @@ public class TicketController : ControllerBase
         _ticketService = ticketService;
     }
 
-    [HttpPost("{id}/accept")]
-    public async Task<IActionResult> Accept(int id)
-    {
-        await _ticketService.AcceptTicketAsync(id, GetUserId());
-        return Ok();
-    }
-
     [HttpGet("technician-tickets")]
     public async Task<IActionResult> GetTechnicianTickets()
     {

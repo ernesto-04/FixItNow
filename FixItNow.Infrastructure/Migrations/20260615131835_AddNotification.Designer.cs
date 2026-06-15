@@ -3,6 +3,7 @@ using System;
 using FixItNow.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FixItNow.Infrastructure.Migrations
 {
     [DbContext(typeof(FixItNowDataContext))]
-    partial class FixItNowDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260615131835_AddNotification")]
+    partial class AddNotification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -198,9 +201,6 @@ namespace FixItNow.Infrastructure.Migrations
                     b.Property<int?>("AssignedTechnicianId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("BookingRequestId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -316,7 +316,7 @@ namespace FixItNow.Infrastructure.Migrations
                     b.ToTable("booking_requests", (string)null);
                 });
 
-            modelBuilder.Entity("FixItNow.Domain.Models.Notification", b =>
+            modelBuilder.Entity("Notification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -464,7 +464,7 @@ namespace FixItNow.Infrastructure.Migrations
                     b.Navigation("Technician");
                 });
 
-            modelBuilder.Entity("FixItNow.Domain.Models.Notification", b =>
+            modelBuilder.Entity("Notification", b =>
                 {
                     b.HasOne("FixItNow.Domain.Models.Accesses.User", "User")
                         .WithMany()

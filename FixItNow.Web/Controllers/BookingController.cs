@@ -1,9 +1,12 @@
 ﻿using System.Security.Claims;
 using FixItNow.Application.Services;
+using FixItNow.Domain.Models.BookingRequest.DTOs;
 using FixItNow.Domain.Models.BookingRequest.DTOs.Bookings;
+using FixItNow.Web.Hubs;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FixItNow.Web.Controllers;
 
@@ -13,10 +16,12 @@ namespace FixItNow.Web.Controllers;
 public class BookingController : ControllerBase
 {
     private readonly IBookingService _bookingService;
+    private readonly IHubContext<ChatHub> _hubContext;
 
-    public BookingController(IBookingService bookingService)
+    public BookingController(IBookingService bookingService, IHubContext<ChatHub> hubContext)
     {
         _bookingService = bookingService;
+        _hubContext = hubContext;
     }
 
     [HttpPost]
@@ -28,8 +33,10 @@ public class BookingController : ControllerBase
         if (!validation.IsValid)
             return BadRequest(validation.ToDictionary());
 
-        var (success, error) = await _bookingService.CreateBookingAsync(GetUserId(), dto);
-        return success ? Ok() : BadRequest(new { message = error });
+        var (success, error, notification) = await _bookingService.CreateBookingAsync(GetUserId(), dto);
+        if (!success) return BadRequest(new { message = error });
+        await PushNotification(notification);
+        return Ok();
     }
 
     [HttpGet("my-bookings")]
@@ -47,22 +54,36 @@ public class BookingController : ControllerBase
     [HttpPost("{bookingId:int}/accept")]
     public async Task<IActionResult> Accept(int bookingId)
     {
-        var (success, error) = await _bookingService.AcceptBookingAsync(bookingId, GetUserId());
-        return success ? Ok() : BadRequest(new { message = error });
+        var (success, error, notification) = await _bookingService.AcceptBookingAsync(bookingId, GetUserId());
+        if (!success) return BadRequest(new { message = error });
+        await PushNotification(notification);
+        return Ok();
     }
 
     [HttpPost("{bookingId:int}/decline")]
     public async Task<IActionResult> Decline(int bookingId)
     {
-        var (success, error) = await _bookingService.DeclineBookingAsync(bookingId, GetUserId());
-        return success ? Ok() : BadRequest(new { message = error });
+        var (success, error, notification) = await _bookingService.DeclineBookingAsync(bookingId, GetUserId());
+        if (!success) return BadRequest(new { message = error });
+        await PushNotification(notification);
+        return Ok();
     }
 
     [HttpPost("{bookingId:int}/cancel")]
     public async Task<IActionResult> Cancel(int bookingId, [FromBody] CancelBookingRequestDto dto)
     {
-        var (success, error) = await _bookingService.CancelBookingAsync(bookingId, GetUserId(), dto.Reason);
-        return success ? Ok() : BadRequest(new { message = error });
+        var (success, error, notification) = await _bookingService.CancelBookingAsync(bookingId, GetUserId(), dto.Reason);
+        if (!success) return BadRequest(new { message = error });
+        await PushNotification(notification);
+        return Ok();
+    }
+
+    private async Task PushNotification(NotificationDto? notification)
+    {
+        if (notification is null) return;
+        await _hubContext.Clients
+            .User(notification.UserId.ToString())
+            .SendAsync("ReceiveNotification", notification);
     }
 
     private int GetUserId() =>

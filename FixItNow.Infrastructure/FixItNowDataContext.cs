@@ -1,4 +1,5 @@
-﻿using FixItNow.Domain.Models.Accesses;
+﻿using FixItNow.Domain.Models;
+using FixItNow.Domain.Models.Accesses;
 using FixItNow.Domain.Models.BookingRequest.Chat;
 using FixItNow.Domain.Models.BookingRequest.Reviews;
 using FixItNow.Domain.Models.BookingRequest.Tickets;
@@ -17,6 +18,7 @@ namespace FixItNow.Infrastructure
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<BookingRequest> BookingRequests { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -159,6 +161,15 @@ namespace FixItNow.Infrastructure
                     .WithMany()
                     .HasForeignKey(b => b.TechnicianId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.ToTable("notifications");
+                entity.HasOne(n => n.User)
+                      .WithMany()
+                      .HasForeignKey(n => n.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

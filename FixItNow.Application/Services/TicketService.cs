@@ -1,4 +1,5 @@
-﻿using FixItNow.Domain.Models.BookingRequest.DTOs.Tickets;
+﻿using FixItNow.Domain.Models.BookingRequest.DTOs;
+using FixItNow.Domain.Models.BookingRequest.DTOs.Tickets;
 using FixItNow.Domain.Models.Bookings;
 using FixItNow.Domain.Models.Tickets;
 using FixItNow.Infrastructure;
@@ -11,18 +12,18 @@ public interface ITicketService
 {
     Task<List<CustomerTicketResponse>> GetCustomerTicketsAsync(int userId);
     Task<List<TechnicianTicketResponse>> GetTechnicianTicketsAsync(int userId);
-    Task AcceptTicketAsync(int ticketId, int technicianUserId);
-    Task UpdateStatusAsync(int ticketId, int userId, TicketStatus newStatus);
+    Task<NotificationDto?> UpdateStatusAsync(int ticketId, int userId, TicketStatus newStatus);
     Task<TicketChatResponse?> GetTicketChatAsync(int ticketId, int userId);
     Task<TechnicianTicketResponse?> GetTechnicianTicketDetailAsync(int ticketId, int userId);
     Task<CustomerTicketResponse?> GetCustomerTicketDetailAsync(int ticketId, int userId);
-    Task CancelTicketAsync(int ticketId, int userId, string reason);
+    Task<NotificationDto?> CancelTicketAsync(int ticketId, int userId, string reason);
 }
 
 public class TicketService : ITicketService
 {
     private readonly FixItNowDataContext _context;
     private readonly string _baseUrl;
+    private readonly INotificationService _notificationService;
 
     private static readonly Dictionary<TicketStatus, List<TicketStatus>> _validTransitions = new()
     {
@@ -32,10 +33,11 @@ public class TicketService : ITicketService
         { TicketStatus.Completed,  [] }
     };
 
-    public TicketService(FixItNowDataContext context, IConfiguration config)
+    public TicketService(FixItNowDataContext context, IConfiguration config, INotificationService notificationService)
     {
         _context = context;
         _baseUrl = config["AppSettings:BaseUrl"] ?? string.Empty;
+        _notificationService = notificationService;
     }
 
     public async Task<List<CustomerTicketResponse>> GetCustomerTicketsAsync(int userId)
@@ -134,38 +136,29 @@ public class TicketService : ITicketService
         };
     }
 
-    public async Task AcceptTicketAsync(int ticketId, int technicianUserId)
+    public async Task<NotificationDto?> UpdateStatusAsync(int ticketId, int userId, TicketStatus newStatus)
     {
         var ticket = await _context.Tickets.FindAsync(ticketId)
             ?? throw new KeyNotFoundException("Ticket not found.");
-
-        if (ticket.Status != TicketStatus.Unassigned)
-            throw new InvalidOperationException("Ticket is already taken.");
-
-        var isTechnician = await _context.TechnicianProfiles
-            .AnyAsync(tp => tp.UserId == technicianUserId);
-
-        if (!isTechnician)
-            throw new InvalidOperationException("User is not a technician.");
-
-        ticket.AssignedTechnicianId = technicianUserId;
-        ticket.Status = TicketStatus.Assigned;
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task UpdateStatusAsync(int ticketId, int userId, TicketStatus newStatus)
-    {
-        var ticket = await _context.Tickets.FindAsync(ticketId)
-            ?? throw new KeyNotFoundException("Ticket not found.");
-
         if (ticket.AssignedTechnicianId != userId)
             throw new InvalidOperationException("You are not assigned to this ticket.");
-
         if (!_validTransitions.TryGetValue(ticket.Status, out var allowed) || !allowed.Contains(newStatus))
             throw new InvalidOperationException($"Invalid status transition: {ticket.Status} → {newStatus}.");
-
         ticket.Status = newStatus;
         await _context.SaveChangesAsync();
+
+        var message = newStatus switch
+        {
+            TicketStatus.InProgress => $"Your job has started: {ticket.Title}",
+            TicketStatus.Completed => $"Your job has been completed: {ticket.Title}",
+            _ => null
+        };
+        if (message is null) return null;
+        return await _notificationService.CreateAsync(
+            ticket.CustomerId,
+            message,
+            "ticket",
+            ticket.Id);
     }
 
     public async Task<TicketChatResponse?> GetTicketChatAsync(int ticketId, int userId)
@@ -193,35 +186,35 @@ public class TicketService : ITicketService
         };
     }
 
-    public async Task CancelTicketAsync(int ticketId, int userId, string reason)
+    public async Task<NotificationDto?> CancelTicketAsync(int ticketId, int userId, string reason)
     {
         if (string.IsNullOrWhiteSpace(reason))
             throw new InvalidOperationException("A cancellation reason is required.");
-
         var ticket = await _context.Tickets.FindAsync(ticketId)
             ?? throw new KeyNotFoundException("Ticket not found.");
-
         if (ticket.AssignedTechnicianId != userId)
             throw new InvalidOperationException("You are not assigned to this ticket.");
-
         if (!_validTransitions.TryGetValue(ticket.Status, out var allowed) || !allowed.Contains(TicketStatus.Cancelled))
             throw new InvalidOperationException($"Cannot cancel a ticket with status {ticket.Status}.");
-
         ticket.Status = TicketStatus.Cancelled;
-
         var booking = await _context.BookingRequests
             .FirstOrDefaultAsync(b =>
                 b.CustomerId == ticket.CustomerId &&
                 b.TechnicianId == ticket.AssignedTechnicianId &&
                 b.Status == BookingStatus.Accepted);
-
         if (booking is not null)
         {
             booking.Status = BookingStatus.Cancelled;
             booking.CancellationReason = reason;
             booking.CancelledByUserId = userId;
         }
-
         await _context.SaveChangesAsync();
+
+        var technician = await _context.Users.FindAsync(userId);
+        return await _notificationService.CreateAsync(
+            ticket.CustomerId,
+            $"Your job was cancelled by {technician?.FullName ?? "the technician"}: {ticket.Title}. Reason: {reason}",
+            "ticket",
+            ticket.Id);
     }
 }

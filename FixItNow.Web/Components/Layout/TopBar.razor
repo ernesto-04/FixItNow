@@ -75,8 +75,7 @@
                            ValueChanged="OnToggleOnlineStatus"
                            Color="Color.Success"
                            Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
-                           Class="mr-2"
-                           Style="--mud-palette-success:#1DBF73;" />
+                           Class="mr-2" />
             }
             <Profile />
         }
@@ -151,11 +150,24 @@
     {
         if (!firstRender) return;
 
+        _isTechnician = await UserApiService.IsTechnicianAsync();
+
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
 
         if (_isAuthenticated)
+        {
             _isTechnician = await UserApiService.IsTechnicianAsync();
+            if (_isTechnician)
+            {
+                var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
+                if (claim is not null)
+                {
+                    var profile = await TechnicianApiService.GetTechnicianByIdAsync(int.Parse(claim.Value));
+                    AppState.IsTechnicianOnline = profile?.IsOnline ?? false;
+                }
+            }
+        }
 
         var savedMode = await LocalStorage.GetAsync<string>("mode");
         AppState.SetMode(savedMode.Success && !string.IsNullOrWhiteSpace(savedMode.Value)

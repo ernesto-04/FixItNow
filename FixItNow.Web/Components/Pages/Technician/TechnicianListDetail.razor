@@ -66,6 +66,14 @@
                     <div style="display:flex; align-items:flex-start;
                                     justify-content:space-between; margin-bottom:4px;">
                         <div>
+                            @if (_profile.IsOnline)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.Circle">Online</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.Circle">Offline</MudChip>
+                        }
                             <div class="profile-name">@_profile.FullName</div>
                             <div class="profile-location">📍 @_profile.Location</div>
                             <div style="font-size:15px; font-weight:700; color:var(--green-dark); margin-top:6px;">

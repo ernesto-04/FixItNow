@@ -50,12 +50,6 @@
         {
             @if (_isTechnician)
             {
-                <MudSwitch T="bool"
-                           Value="AppState.IsTechnicianOnline"
-                           ValueChanged="OnToggleOnlineStatus"
-                           Color="Color.Success"
-                           Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
-                           Class="mr-2" />
                 <div class="topbar-mode-tabs">
                     <button class="topbar-mode-tab @(AppState.Mode == AppState.CustomerMode ? "active" : "")"
                             @onclick="@(() => SwitchMode(AppState.CustomerMode))">
@@ -73,6 +67,16 @@
                         @onclick="@(() => _showTechnicianPanel = true)">
                     Become a Technician
                 </button>
+            }
+            @if (AppState.Mode == AppState.TechnicianMode)
+            {
+                <MudSwitch T="bool"
+                           Value="AppState.IsTechnicianOnline"
+                           ValueChanged="OnToggleOnlineStatus"
+                           Color="Color.Success"
+                           Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
+                           Class="mr-2"
+                           Style="--mud-palette-success:#1DBF73;" />
             }
             <Profile />
         }
@@ -196,11 +200,13 @@
         }
     }
 
-    private async Task OnToggleOnlineStatus(bool value)
+    private async Task OnToggleOnlineStatus(bool isOnline)
     {
-        var success = await TechnicianApiService.SetOnlineStatusAsync(value);
+        var success = await TechnicianApiService.SetOnlineStatusAsync(isOnline);
         if (success)
-            AppState.SetOnlineStatus(value);
+        {
+            AppState.IsTechnicianOnline = isOnline;
+        }
     }
 
     public void Dispose() => AppState.OnChange -= Refresh;

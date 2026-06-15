@@ -97,8 +97,7 @@ public class TechnicianService : ITechnicianService
         var profile = await _context.TechnicianProfiles
             .FirstOrDefaultAsync(t => t.UserId == userId);
 
-        if (profile is null)
-            return false;
+        if (profile is null) return false;
 
         profile.IsOnline = isOnline;
         await _context.SaveChangesAsync();

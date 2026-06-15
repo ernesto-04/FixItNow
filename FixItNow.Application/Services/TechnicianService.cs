@@ -44,7 +44,8 @@ public class TechnicianService : ITechnicianService
                     .Average(r => (double?)r.Rating) ?? 0,
                 HourlyRate = tp.HourlyRate,
                 CallOutFee = tp.CallOutFee,
-                IsOnline = tp.IsOnline
+                IsOnline = tp.IsOnline,
+                PhoneNumber = tp.PhoneNumber ?? string.Empty
             })
             .ToListAsync();
     }
@@ -71,7 +72,8 @@ public class TechnicianService : ITechnicianService
                     .Average(r => (double?)r.Rating) ?? 0,
                 HourlyRate = tp.HourlyRate,
                 CallOutFee = tp.CallOutFee,
-                IsOnline = tp.IsOnline
+                IsOnline = tp.IsOnline,
+                PhoneNumber = tp.PhoneNumber ?? string.Empty
             })
             .FirstOrDefaultAsync();
     }
@@ -88,6 +90,7 @@ public class TechnicianService : ITechnicianService
         profile.ProfileImageUrl = dto.ProfileImageUrl;
         profile.HourlyRate = dto.HourlyRate;
         profile.CallOutFee = dto.CallOutFee;
+        profile.PhoneNumber = dto.PhoneNumber;
         await _context.SaveChangesAsync();
         return await GetTechnicianByIdAsync(userId);
     }

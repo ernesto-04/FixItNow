@@ -22,5 +22,9 @@ public class UpdateTechnicianProfileValidator : AbstractValidator<UpdateTechnici
         RuleFor(x => x.YearsExperience)
             .GreaterThanOrEqualTo(0).WithMessage("Years of experience cannot be negative.")
             .LessThanOrEqualTo(50).WithMessage("Please enter a realistic value for years of experience.");
+        RuleFor(x => x.PhoneNumber)
+            .Must(phone => string.IsNullOrWhiteSpace(phone) ||
+                           System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0[0-9]{9,12}$"))
+            .WithMessage("Enter a valid Indonesian phone number (e.g. 08123456789)");
     }
 }

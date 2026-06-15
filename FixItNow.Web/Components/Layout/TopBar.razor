@@ -48,6 +48,15 @@
     {
         @if (_isAuthenticated)
         {
+            @if (AppState.Mode == AppState.TechnicianMode)
+            {
+                <MudSwitch T="bool"
+                           Value="AppState.IsTechnicianOnline"
+                           ValueChanged="OnToggleOnlineStatus"
+                           Color="Color.Success"
+                           Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
+                           Class="mr-2" />
+            }
             @if (_isTechnician)
             {
                 <div class="topbar-mode-tabs">
@@ -67,15 +76,6 @@
                         @onclick="@(() => _showTechnicianPanel = true)">
                     Become a Technician
                 </button>
-            }
-            @if (AppState.Mode == AppState.TechnicianMode)
-            {
-                <MudSwitch T="bool"
-                           Value="AppState.IsTechnicianOnline"
-                           ValueChanged="OnToggleOnlineStatus"
-                           Color="Color.Success"
-                           Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
-                           Class="mr-2" />
             }
             <Profile />
         }

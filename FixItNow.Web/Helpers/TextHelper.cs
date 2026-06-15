@@ -33,4 +33,14 @@
 
         return string.Join(" ", parts);
     }
+
+    public static string? GetWhatsAppUrl(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return null;
+        // convert 08xx → 628xx
+        var normalized = phone.TrimStart().StartsWith("0")
+            ? "62" + phone.Substring(1)
+            : phone;
+        return $"https://wa.me/{normalized}";
+    }
 }

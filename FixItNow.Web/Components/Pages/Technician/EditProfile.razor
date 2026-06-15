@@ -240,6 +240,21 @@
                         </div>
                     </div>
 
+                    <!-- WHATSAPP NUMBER -->
+                    <div style="margin-top:20px;">
+                        <label style="display:block; font-size:13px; font-weight:600;
+          color:var(--text); margin-bottom:6px;">
+                            WhatsApp Number
+                        </label>
+                        <MudTextField Variant="Variant.Outlined"
+                                      @bind-Value="_form.PhoneNumber"
+                                      Placeholder="e.g. 08123456789"
+                                      FullWidth="true" />
+                        <div style="font-size:12px; color:var(--muted); margin-top:6px;">
+                            Customers can contact you directly via WhatsApp
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- SAVE BUTTON -->
@@ -302,6 +317,7 @@
                 _form.ProfileImageUrl = profile.ProfileImageUrl;
                 _form.HourlyRate = profile.HourlyRate;
                 _form.CallOutFee = profile.CallOutFee;
+                _form.PhoneNumber = profile.PhoneNumber;
             }
         }
 

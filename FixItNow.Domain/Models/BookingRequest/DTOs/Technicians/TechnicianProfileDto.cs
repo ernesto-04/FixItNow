@@ -15,5 +15,6 @@
         public decimal? HourlyRate { get; set; }
         public decimal? CallOutFee { get; set; }
         public bool IsOnline { get; set; }
+        public string? PhoneNumber { get; set; }
     }
 }

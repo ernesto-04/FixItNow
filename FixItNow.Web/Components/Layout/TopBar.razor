@@ -23,23 +23,33 @@
         <NavLink href="/dashboard" Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
             Home
         </NavLink>
-        <NavLink href="/technicians" Match="NavLinkMatch.Prefix" class="topbar-link" ActiveClass="active">
-            Browse Technicians
-        </NavLink>
 
-        @if (_isAuthenticated)
+        @if (!_isAdmin)
         {
-            <NavLink href="@(AppState.Mode == AppState.CustomerMode ? "/my-bookings" : "/booking-requests")"
-                     Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
-                @(AppState.Mode == AppState.CustomerMode ? "My Requests" : "My Jobs")
+            <NavLink href="/technicians" Match="NavLinkMatch.Prefix" class="topbar-link" ActiveClass="active">
+                Browse Technicians
             </NavLink>
 
-            @if (AppState.Mode == AppState.TechnicianMode)
+            @if (_isAuthenticated)
             {
-                <NavLink href="/edit-profile" Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
-                    Edit Profile
+                <NavLink href="@(AppState.Mode == AppState.CustomerMode ? "/my-bookings" : "/booking-requests")"
+                         Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
+                    @(AppState.Mode == AppState.CustomerMode ? "My Requests" : "My Jobs")
                 </NavLink>
+
+                @if (AppState.Mode == AppState.TechnicianMode)
+                {
+                    <NavLink href="/edit-profile" Match="NavLinkMatch.All" class="topbar-link" ActiveClass="active">
+                        Edit Profile
+                    </NavLink>
+                }
             }
+        }
+        else
+        {
+            <NavLink href="/admin/technicians" Match="NavLinkMatch.Prefix" class="topbar-link" ActiveClass="active">
+                Admin
+            </NavLink>
         }
     </nav>
 
@@ -50,37 +60,41 @@
     {
         @if (_isAuthenticated)
         {
-            @if (AppState.Mode == AppState.TechnicianMode)
+            @if (!_isAdmin)
             {
-                <MudSwitch T="bool"
-                           Value="AppState.IsTechnicianOnline"
-                           ValueChanged="OnToggleOnlineStatus"
-                           Color="Color.Success"
-                           Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
-                           Class="mr-2" />
-            }
-            @if (_isTechnician)
-            {
-                <div class="topbar-mode-tabs">
-                    <button class="topbar-mode-tab @(AppState.Mode == AppState.CustomerMode ? "active" : "")"
-                            @onclick="@(() => SwitchMode(AppState.CustomerMode))">
-                        Customer
+                @if (AppState.Mode == AppState.TechnicianMode)
+                {
+                    <MudSwitch T="bool"
+                               Value="AppState.IsTechnicianOnline"
+                               ValueChanged="OnToggleOnlineStatus"
+                               Color="Color.Success"
+                               Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
+                               Class="mr-2" />
+                }
+                @if (_isTechnician)
+                {
+                    <div class="topbar-mode-tabs">
+                        <button class="topbar-mode-tab @(AppState.Mode == AppState.CustomerMode ? "active" : "")"
+                                @onclick="@(() => SwitchMode(AppState.CustomerMode))">
+                            Customer
+                        </button>
+                        <button class="topbar-mode-tab @(AppState.Mode == AppState.TechnicianMode ? "active" : "")"
+                                @onclick="@(() => SwitchMode(AppState.TechnicianMode))">
+                            Technician
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <button class="btn btn-outline" style="font-size:13px; padding:8px 16px;"
+                            @onclick="@(() => _showTechnicianPanel = true)">
+                        Become a Technician
                     </button>
-                    <button class="topbar-mode-tab @(AppState.Mode == AppState.TechnicianMode ? "active" : "")"
-                            @onclick="@(() => SwitchMode(AppState.TechnicianMode))">
-                        Technician
-                    </button>
-                </div>
+                }
             }
-            else
-            {
-                <button class="btn btn-outline" style="font-size:13px; padding:8px 16px;"
-                        @onclick="@(() => _showTechnicianPanel = true)">
-                    Become a Technician
-                </button>
-            }
-            @if (_isAuthenticated)
-            {
+
+            <!-- notification bell stays for everyone -->
+            <div style="position:relative; margin-right:8px;">
                 <div style="position:relative; margin-right:8px;">
                     <button @onclick="ToggleNotifications"
                             style="background:none; border:none; cursor:pointer;
@@ -150,7 +164,8 @@
                         </div>
                     }
                 </div>
-            }
+            </div>
+
             <Profile />
         }
         else
@@ -215,6 +230,7 @@
     private bool _isTechnician;
     private bool _isAuthenticated;
     private bool _topbarReady;
+    private bool _isAdmin = false;
 
     private readonly CreateTechnicianProfileRequest _request = new();
 
@@ -264,7 +280,9 @@
         if (_isAuthenticated)
         {
             _isTechnician = await UserApiService.IsTechnicianAsync();
-            if (_isTechnician)
+            _isAdmin = authState.User.FindFirstValue("IsAdmin") == "True"; 
+
+            if (_isTechnician && !_isAdmin)
             {
                 var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
                 if (claim is not null)
@@ -273,8 +291,12 @@
                     AppState.IsTechnicianOnline = profile?.IsOnline ?? false;
                 }
             }
-            var notifications = await NotificationApiService.GetUnreadAsync();
-            AppState.SetNotifications(notifications);
+
+            if (!_isAdmin)
+            {
+                var notifications = await NotificationApiService.GetUnreadAsync();
+                AppState.SetNotifications(notifications);
+            }
         }
 
         var client = await AuthenticatedHttpService.GetClientAsync();

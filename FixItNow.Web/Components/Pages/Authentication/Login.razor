@@ -1,4 +1,5 @@
 ﻿@page "/login"
+@using System.IdentityModel.Tokens.Jwt
 @layout LoginLayout
 
 @inject IAuthenticationService _authService;
@@ -211,15 +212,10 @@
         try
         {
             _pageError = string.Empty;
-
             _isLoading = true;
-
             var response = await _authService.LoginAsync(authRequest);
-
             await ((CustomAuthStateProvider)_authStateProvider)
                 .StartSession(response.Token);
-
-            AppState.SetMode(AppState.CustomerMode);
 
             if (MudDialog is not null)
             {
@@ -228,6 +224,18 @@
                 return;
             }
 
+            var handler = new JwtSecurityTokenHandler();
+            handler.InboundClaimTypeMap.Clear();
+            var jwt = handler.ReadJwtToken(response.Token);
+            var isAdmin = jwt.Claims.FirstOrDefault(c => c.Type == "IsAdmin")?.Value == "True";
+
+            if (isAdmin)
+            {
+                NavigationManager.NavigateTo("/admin/technicians", forceLoad: true);
+                return;
+            }
+
+            AppState.SetMode(AppState.CustomerMode);
             NavigationManager.NavigateTo(
                 string.IsNullOrWhiteSpace(RedirectUrl) ? "/dashboard" : RedirectUrl,
                 forceLoad: true);

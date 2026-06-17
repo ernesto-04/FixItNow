@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<ReviewApiService>();
         services.AddScoped<BookingApiService>();
         services.AddScoped<NotificationApiService>();
+        services.AddScoped<AdminApiService>();
 
         return services;
     }

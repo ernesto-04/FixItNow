@@ -41,7 +41,9 @@ public class BookingService : IBookingService
             return (false, "You already have a pending booking with this technician.", null);
         var technicianProfile = await _context.TechnicianProfiles
             .FirstOrDefaultAsync(t => t.UserId == dto.TechnicianId);
-        if (technicianProfile is null || !technicianProfile.IsOnline)
+        if (technicianProfile is null || !technicianProfile.IsApproved)
+            return (false, "This technician is not yet approved to accept bookings.", null);
+        if (!technicianProfile.IsOnline)
             return (false, "This technician is currently offline and not accepting bookings.", null);
         var booking = new BookingRequest
         {

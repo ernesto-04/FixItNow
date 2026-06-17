@@ -3,6 +3,7 @@ using System;
 using FixItNow.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FixItNow.Infrastructure.Migrations
 {
     [DbContext(typeof(FixItNowDataContext))]
-    partial class FixItNowDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260616065218_AddAdminAndTechnicianApproval")]
+    partial class AddAdminAndTechnicianApproval
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,11 +51,6 @@ namespace FixItNow.Infrastructure.Migrations
                     b.Property<bool>("IsOnline")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsRejected")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -62,10 +60,6 @@ namespace FixItNow.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("ProfileImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("RejectionReason")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 

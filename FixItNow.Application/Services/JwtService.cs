@@ -35,14 +35,14 @@ public class JwtService : IJwtService
             claims:
             [
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim("FullName", user.FullName)
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim("FullName", user.FullName),
+            new Claim("IsAdmin", user.IsAdmin.ToString())
             ],
             expires: DateTime.UtcNow.AddHours(1),
             signingCredentials: new SigningCredentials(_secretKey, SecurityAlgorithms.HmacSha256)
         );
-
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

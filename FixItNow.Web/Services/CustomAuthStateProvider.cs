@@ -18,7 +18,10 @@ public class CustomAuthStateProvider(ProtectedLocalStorage localStorage)
             if (!result.Success || string.IsNullOrWhiteSpace(result.Value))
                 return AnonymousState();
 
-            var jwtToken = new JwtSecurityToken(result.Value);
+            var handler = new JwtSecurityTokenHandler();
+            handler.InboundClaimTypeMap.Clear();
+            var jwtToken = handler.ReadJwtToken(result.Value);
+
             if (jwtToken.ValidTo < DateTime.UtcNow)
             {
                 await localStorage.DeleteAsync(TokenKey);

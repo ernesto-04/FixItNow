@@ -25,7 +25,7 @@ public class TechnicianService : ITechnicianService
     public async Task<List<TechnicianProfileDto>> GetAllTechniciansAsync(int currentUserId)
     {
         return await _context.TechnicianProfiles
-            .Where(tp => tp.UserId != currentUserId)
+            .Where(tp => tp.UserId != currentUserId && tp.IsApproved && !tp.IsRejected)
             .Select(tp => new TechnicianProfileDto
             {
                 Id = tp.Id,
@@ -45,7 +45,8 @@ public class TechnicianService : ITechnicianService
                 HourlyRate = tp.HourlyRate,
                 CallOutFee = tp.CallOutFee,
                 IsOnline = tp.IsOnline,
-                PhoneNumber = tp.PhoneNumber ?? string.Empty
+                PhoneNumber = tp.PhoneNumber ?? string.Empty,
+                IsApproved = tp.IsApproved
             })
             .ToListAsync();
     }
@@ -73,7 +74,8 @@ public class TechnicianService : ITechnicianService
                 HourlyRate = tp.HourlyRate,
                 CallOutFee = tp.CallOutFee,
                 IsOnline = tp.IsOnline,
-                PhoneNumber = tp.PhoneNumber ?? string.Empty
+                PhoneNumber = tp.PhoneNumber ?? string.Empty,
+                IsApproved = tp.IsApproved
             })
             .FirstOrDefaultAsync();
     }

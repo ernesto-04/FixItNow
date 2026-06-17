@@ -16,5 +16,8 @@
         public decimal? CallOutFee { get; set; }
         public bool IsOnline { get; set; }
         public string? PhoneNumber { get; set; }
+        public bool IsApproved { get; set; }
+        public bool IsRejected { get; set; }
+        public string? RejectionReason { get; set; }
     }
 }

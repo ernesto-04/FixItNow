@@ -35,6 +35,10 @@ namespace FixItNow.Infrastructure
                 entity.HasIndex(u => u.Email).IsUnique();
 
                 entity.Property(u => u.PasswordHash).IsRequired();
+
+                entity.Property(u => u.IsAdmin)
+                    .IsRequired()
+                    .HasDefaultValue(false);
             });
 
             modelBuilder.Entity<TechnicianProfile>(entity =>
@@ -46,6 +50,14 @@ namespace FixItNow.Infrastructure
                 entity.Property(tp => tp.Location).IsRequired().HasMaxLength(255);
                 entity.Property(tp => tp.YearsExperience).IsRequired().HasDefaultValue(0);
                 entity.Property(tp => tp.ProfileImageUrl).HasMaxLength(500);
+                entity.Property(tp => tp.IsApproved)
+                    .IsRequired()
+                    .HasDefaultValue(false);
+                entity.Property(tp => tp.IsRejected)
+                    .IsRequired()
+                    .HasDefaultValue(false);
+                entity.Property(tp => tp.RejectionReason)
+                    .HasMaxLength(500);
 
                 entity.HasOne(tp => tp.User)
                     .WithOne(u => u.TechnicianProfile)

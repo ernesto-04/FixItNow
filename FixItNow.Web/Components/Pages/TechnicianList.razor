@@ -112,6 +112,33 @@
                                       font-family:inherit;" />
                 </div>
 
+                <!-- PRICE FILTER -->
+                <div style="display:flex; align-items:center; gap:8px;
+                 background:#f5f5f5; border-radius:6px;
+                 padding:10px 16px; min-width:160px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                         viewBox="0 0 24 24" fill="none" stroke="#999"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23" />
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                    <input type="number"
+                           placeholder="Min price"
+                           value="@_minPrice"
+                           @oninput="@(e => { _minPrice = decimal.TryParse(e.Value?.ToString(), out var v) ? v : null; ApplyFilters(); })"
+                           style="border:none; background:transparent; outline:none;
+                      font-size:14px; color:var(--text); width:80px;
+                      font-family:inherit;" />
+                    <span style="color:#ccc;">—</span>
+                    <input type="number"
+                           placeholder="Max"
+                           value="@_maxPrice"
+                           @oninput="@(e => { _maxPrice = decimal.TryParse(e.Value?.ToString(), out var v) ? v : null; ApplyFilters(); })"
+                           style="border:none; background:transparent; outline:none;
+                      font-size:14px; color:var(--text); width:60px;
+                      font-family:inherit;" />
+                </div>
+
                 <!-- SORT -->
                 <select @bind="_sortBy"
                         @bind:after="ApplyFilters"
@@ -127,7 +154,7 @@
                 <!-- CLEAR -->
                 @if (_searchName != "" || _searchSkill != "" ||
                             _searchLocation != "" || _minRating > 0 ||
-                            _activeCategory != "All")
+                            _activeCategory != "All" || _minPrice.HasValue || _maxPrice.HasValue)
                 {
                     <button @onclick="ClearFilters"
                             style="background:none; border:none; font-size:13px;
@@ -174,86 +201,49 @@
                         <div class="tech-card"
                              @onclick="@(() => NavigationManager.NavigateTo($"/technicians/{tech.UserId}"))">
 
-                            <!-- CARD BANNER + AVATAR -->
+                            <!-- BANNER + AVATAR -->
                             <div class="tech-card-header"></div>
                             <div style="position:relative; padding:0 20px;">
                                 <div class="tech-card-avatar">
                                     @if (!string.IsNullOrWhiteSpace(tech.ProfileImageUrl)
-                                                            && Uri.IsWellFormedUriString(
-                                                            tech.ProfileImageUrl, UriKind.Absolute))
+                                                            && Uri.IsWellFormedUriString(tech.ProfileImageUrl, UriKind.Absolute))
                                     {
-                                        <img src="@tech.ProfileImageUrl"
-                                             alt="@tech.FullName" />
+                                        <img src="@tech.ProfileImageUrl" alt="@tech.FullName" />
                                     }
                                     else
                                     {
                                         @tech.FullName.FirstOrDefault()
                                     }
-                            </div>
-                        </div>
-
-                        <!-- CARD BODY -->
-                        <div class="tech-card-body">
-                             <TechnicianActiveCard Technician="tech" />
-                            <div class="tech-card-name">@tech.FullName</div>
-                            <div class="tech-card-location">📍 @tech.Location</div>
-
-                            <div class="tech-card-bio">@TextHelper.Shorten(tech.Bio)</div>
-
-                            <div style="font-size:14px; font-weight:700; color:var(--green-dark);
-                    margin-top:4px; margin-bottom:8px;">
-                                @TextHelper.FormatRate(tech.HourlyRate, tech.CallOutFee)
+                                </div>
                             </div>
 
-                            <div class="tech-card-skills">Skills</div>
-                            <div class="tech-card-skills-value">@tech.Skills</div>
+                            <!-- BODY -->
+                            <div class="tech-card-body">
+                                <TechnicianActiveCard Technician="tech" />
+                                <div class="tech-card-name">@tech.FullName</div>
+                                <div class="tech-card-location">📍 @tech.Location</div>
+                                <div class="tech-card-bio">@TextHelper.Shorten(tech.Bio)</div>
+                                <div class="tech-card-skills">Skills</div>
+                                <div class="tech-card-skills-value">@tech.Skills</div>
+                            </div>
 
-                            <div class="tech-card-divider"></div>
-
-                            <div class="tech-card-stats">
-                                <div>
-                                    <div class="tech-stat-label">Experience</div>
-                                    <div class="tech-stat-value">
-                                        @tech.YearsExperience yrs
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="tech-stat-label">Jobs Done</div>
-                                    <div class="tech-stat-value">
-                                        @tech.CompletedJobs
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="tech-stat-label">Rating</div>
-                                    <div class="tech-stat-value">
-                                        @(tech.AverageRating > 0
-                                                                        ? tech.AverageRating.ToString("0.0")
-                                                                        : "—")
-                                                                          </div>
-                                                                      </div>
-                                                                  </div>
-
-                        </div>
-
-                        <!-- CARD FOOTER -->
-                        <div class="tech-card-footer">
-                            <div class="tech-rating">
-                                <span class="tech-rating-star">★</span>
-                                <span>
-                                    @(tech.AverageRating > 0
-                                                                ? tech.AverageRating.ToString("0.0")
-                                                                : "New")
-                        </span>
-                        @if (tech.CompletedJobs > 0)
+                            <!-- FOOTER -->
+                            <div class="tech-card-footer">
+                                <div class="tech-rating">
+                                    <span class="tech-rating-star">★</span>
+                                    <span>
+                                        @(tech.AverageRating > 0 ? tech.AverageRating.ToString("0.0") : "New")
+                                    </span>
+                                    @if (tech.CompletedJobs > 0)
                                     {
                                         <span style="color:var(--muted); font-weight:400;">
                                             (@tech.CompletedJobs jobs)
                                         </span>
                                     }
                                 </div>
-                                <button class="tech-view-btn">
-                                    View Profile →
-                                </button>
+                                <div style="font-size:13px; font-weight:700; color:var(--green-dark);">
+                                    @TextHelper.FormatRate(tech.HourlyRate, tech.CallOutFee)
+                                </div>
                             </div>
 
                         </div>
@@ -280,6 +270,8 @@
     private string _sortBy = SortDefault;
 
     private int _minRating;
+    private decimal? _minPrice;
+    private decimal? _maxPrice;
 
     private bool _isLoading = true;
 
@@ -344,6 +336,12 @@
             result = result.Where(t =>
                 t.AverageRating >= _minRating);
 
+        if (_minPrice.HasValue)
+            result = result.Where(t => t.HourlyRate.HasValue && t.HourlyRate >= _minPrice.Value);
+
+        if (_maxPrice.HasValue)
+            result = result.Where(t => t.HourlyRate.HasValue && t.HourlyRate <= _maxPrice.Value);
+
         if (_activeCategory != "All")
             result = result.Where(t =>
                 t.Skills.Contains(
@@ -368,6 +366,8 @@
         _searchLocation = string.Empty;
         _sortBy = SortDefault;
         _minRating = 0;
+		_minPrice = null;
+		_maxPrice = null;
         ApplyFilters();
     }
 }

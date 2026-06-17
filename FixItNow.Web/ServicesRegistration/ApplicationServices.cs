@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IChatService, ChatService>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<AuthenticatedHttpService>();
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();

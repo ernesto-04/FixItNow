@@ -48,7 +48,7 @@
                             {
                                 TabRequest => _requests.Count,
                                 TabActive => _active.Count,
-                                TabHistory => _history.Count,
+                                TabHistory => _completedTickets.Count + _declinedBookings.Count + _cancelledTickets.Count,
                                 _ => 0
                             };
                         }
@@ -148,7 +148,7 @@
             <!-- HISTORY TAB -->
             @if (_activeTab == TabHistory)
             {
-                @if (_history.Count == 0)
+                @if (_completedTickets.Count == 0 && _declinedBookings.Count == 0 && _cancelledTickets.Count == 0)
                 {
                     <div style="text-align:center; padding:80px 20px;
                                             border:1px solid var(--border);
@@ -251,6 +251,8 @@
         if (!firstRender) return;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        Console.WriteLine($"IsAuthenticated: {authState.User.Identity?.IsAuthenticated}");
+        Console.WriteLine($"Name: {authState.User.Identity?.Name}");
         if (authState.User.Identity?.IsAuthenticated != true)
         {
             NavigationManager.NavigateTo("/login");

@@ -1,248 +1,153 @@
-# FixItNow – Service Marketplace Platform
+# FixItNow
 
-## 📌 Overview
+**A full-stack service marketplace platform connecting customers with local technicians for on-demand home services.**
 
-FixItNow is a full-stack web-based service marketplace platform that connects customers with technicians for on-demand issue resolution.
+Built with .NET 8, Blazor Server, PostgreSQL, and SignalR — deployed on Microsoft Azure.
 
-The platform allows customers to create service requests, while technicians can browse, accept, manage, and complete tasks through a structured workflow. The system also supports real-time communication between customers and technicians using SignalR.
-
-This project focuses on clean architecture, scalable backend design, real-world workflow implementation, and cloud deployment using Microsoft Azure.
-
-🌐 Live Demo: https://your-azure-app.azurewebsites.net
+🌐 **Live Demo:** [fixitnow-api-ernesto-g7ffa2bcdaejeyd0.southeastasia-01.azurewebsites.net](https://fixitnow-api-ernesto-g7ffa2bcdaejeyd0.southeastasia-01.azurewebsites.net/dashboard)
 
 ---
 
-## 🧪 Demo Accounts
+## Demo Accounts
 
-### Customer Account
-```text
-Email: customer@fixitnow.demo
-Password: Demo123!
+| Role | Email | Password |
+|------|-------|----------|
+| Customer | customer@fixitnow.demo | Demo123! |
+| Technician | technician@fixitnow.demo | Demo123! |
+
+---
+
+## What It Does
+
+FixItNow is inspired by platforms like Gojek and TaskRabbit. Customers can browse verified technicians, send booking requests, track service progress, and chat in real time. Technicians manage their availability, accept or decline jobs, and build a profile with reviews.
+
+Payment is handled outside the app (cash, GoPay, bank transfer) — the platform focuses on discovery, booking, job tracking, communication, and trust.
+
+---
+
+## Features
+
+**Authentication & Authorization**
+- JWT-based login and registration
+- Role-based access control (Customer, Technician, Admin)
+- Protected API endpoints and secure SignalR connections
+
+**Technician System**
+- Apply to become a technician with profile details
+- Admin approval/rejection flow with rejection reasons
+- Online/offline availability toggle
+- Profile images uploaded to Azure Blob Storage
+
+**Booking Requests**
+- Customers send booking requests to specific technicians
+- Technicians accept or decline with real-time notifications
+- Cancellation flow for both sides
+
+**Ticket Management**
+- Service tickets created from accepted bookings
+- Structured lifecycle: `Unassigned → Assigned → In Progress → Completed`
+- Image attachments per ticket
+
+**Real-Time Chat**
+- SignalR-powered messaging per ticket
+- Full conversation history with timestamps
+- Secure participant validation
+
+**Reviews**
+- Customers leave ratings (1–5) and comments after job completion
+- Per-technician review aggregation with average rating
+
+**Notifications**
+- Hybrid system: persisted to PostgreSQL + real-time delivery via SignalR
+- Unread count badge and notification dropdown in the top bar
+- Triggered by booking updates, approvals, rejections
+
+**Admin Dashboard**
+- Review pending technician applications
+- Approve or reject with a reason
+- Rejected technicians can re-apply
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | ASP.NET Core Web API (.NET 8) |
+| Frontend | Blazor Server, MudBlazor |
+| Real-Time | SignalR |
+| Database | PostgreSQL (Azure) |
+| ORM | Entity Framework Core |
+| Auth | JWT |
+| Storage | Azure Blob Storage |
+| Hosting | Azure App Service |
+
+---
+
+## Architecture
+
+Clean Architecture with four projects:
+
 ```
-
-### Technician Account
-```text
-Email: technician@fixitnow.demo
-Password: Demo123!
-```
-
----
-
-## 🧠 Problem Statement
-
-In Indonesia, finding reliable technicians (e.g., for home repairs or maintenance) is often difficult.
-
-Most people rely on:
-
-* Personal recommendations from friends or family
-* Informal networks with limited availability
-* Unverified service providers
-
-This leads to:
-
-* Delays in getting help
-* Lack of transparency in service quality
-* Inefficient communication between customers and technicians
-
-There is a need for a centralized platform to:
-
-* Connect customers with available technicians
-* Standardize the service request process
-* Improve visibility and tracking of tasks
-* Provide a more structured communication workflow
-
----
-
-## 🏗️ Architecture
-
-This project follows **Clean Architecture principles**, ensuring maintainability, scalability, and separation of concerns.
-
-```text
-/Presentation Layer   → Blazor WebAssembly UI
-/Application Layer    → Business logic & use cases
-/Domain Layer         → Core entities & models
-/Infrastructure Layer → Database & external services
-```
-
-### Key Design Decisions
-
-* Clean separation between layers
-* Dependency Injection for service management
-* Service abstraction for maintainability
-* Async-first architecture for scalability
-* Role-based authorization for secure access
-* Modular feature organization
-* Environment-based configuration for deployment
-
----
-
-## ⚙️ Tech Stack
-
-### Backend
-* ASP.NET Core Web API (.NET 8)
-* Entity Framework Core
-* SignalR
-
-### Frontend
-* Blazor WebAssembly
-* MudBlazor
-
-### Database
-* PostgreSQL
-
-### Authentication & Security
-* JWT Authentication
-* Role-Based Authorization
-
-### Cloud & DevOps
-* Microsoft Azure App Service
-* Azure PostgreSQL Flexible Server
-
----
-
-## 🔄 Core Features
-
-### 🔐 Authentication & Authorization
-
-* Secure JWT-based authentication
-* Role-based access control (Customer & Technician)
-* Protected API endpoints
-* Secure SignalR communication
-
----
-
-### 🧾 Ticket Management
-
-* Customers can create service requests
-* Includes title, description, category, and location
-* Ticket status tracking
-* Structured ticket workflow lifecycle
-
----
-
-### 👨‍🔧 Technician Workflow
-
-* Browse available (unassigned) tickets
-* Accept and manage assigned tickets
-* Update work progress
-* Complete assigned tasks
-
----
-
-### 💬 Real-Time Chat System
-
-* Real-time messaging using SignalR
-* Separate chat interface for customers and technicians
-* Ticket-based communication rooms
-* Conversation history & timestamps
-* Secure access validation for chat participants
-
----
-
-### 🔁 Ticket Lifecycle
-
-```text
-Unassigned → Assigned → In Progress → Completed
+FixItNow.Web            → Controllers, SignalR Hubs, API Services, Blazor UI
+FixItNow.Application    → Business Logic, Services, Validators
+FixItNow.Domain         → Entities, DTOs, Enums
+FixItNow.Infrastructure → EF Core, Migrations, DbContext, DI Registration
 ```
 
 ---
 
-## 📊 System Workflow
-
-1. Customer logs in and creates a service ticket
-2. Ticket status becomes **Unassigned**
-3. Technician browses available tickets
-4. Technician accepts ticket → **Assigned**
-5. Technician updates progress → **In Progress**
-6. Customer and technician communicate in real time
-7. Task completed → **Completed**
-
----
-
-## 🚀 Live Deployment
-
-FixItNow is deployed publicly using Microsoft Azure.
-
-### Cloud Infrastructure
-
-* Azure App Service
-* Azure PostgreSQL Database
-* HTTPS-enabled deployment
-* Environment-based configuration management
-
-🌐 Live Website: https://your-azure-app.azurewebsites.net
-
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-
-* .NET 8 SDK
-* PostgreSQL
-
----
+- .NET 8 SDK
+- PostgreSQL
 
 ### Run Locally
 
 ```bash
-dotnet run
+git clone https://github.com/ernesto-04/FixItNow.git
+cd FixItNow
+dotnet run --project FixItNow.Web
+```
+
+The app auto-migrates the database on startup.
+
+### Configuration
+
+Set your connection string and JWT secret in `appsettings.json` or via environment variables:
+
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=...;Database=fixitnow;Username=...;Password=..."
+  },
+  "Jwt": {
+    "Secret": "your-secret-key",
+    "Issuer": "FixItNow",
+    "Audience": "FixItNow"
+  }
+}
 ```
 
 ---
 
-### Environment Configuration
+## Project Highlights
 
-The project supports multiple environments:
-
-* Development → Local PostgreSQL
-* Production → Azure PostgreSQL
-
-Environment variables are used for secure production configuration.
-
----
-
-## 🧪 Demo Notes
-
-* This project uses development/demo data
-* No real customer data is included
-* Built primarily for learning and portfolio purposes
+- **Real-world workflow** — full booking-to-completion lifecycle with state machine ticket transitions
+- **Hybrid notification system** — every notification persisted to DB and delivered live via SignalR
+- **Clean Architecture** — strict layer separation, DI throughout, no business logic in controllers
+- **Auth prerender handling** — custom `AuthenticationStateProvider` that safely handles JS interop exceptions during Blazor Server prerender
+- **Azure-deployed** — live on Azure App Service with Azure PostgreSQL and Blob Storage
 
 ---
 
-## 🧩 Future Improvements
+## Disclaimer
 
-* Notification system (real-time & email)
-* File/image attachments in chat
-* Technician rating & review system
-* Advanced filtering & search
-* Pagination & performance optimization
-* Redis caching
-* Admin dashboard & analytics
+Built for educational and portfolio purposes. All demo data is synthetic and does not represent real users or organizations.
 
 ---
 
-## 📚 What This Project Demonstrates
+## Author
 
-* Clean Architecture implementation
-* RESTful API development
-* JWT authentication & authorization
-* Real-time communication using SignalR
-* Blazor WebAssembly frontend development
-* PostgreSQL integration with Entity Framework Core
-* Azure cloud deployment
-* Role-based workflow management
-* Real-world service marketplace modeling
-* Scalable backend structure & maintainability
-
----
-
-## ⚠️ Disclaimer
-
-This project was built for educational and portfolio purposes. All data shown is synthetic and does not represent real users or organizations.
-
----
-
-## 👤 Author
-
-Developed by Ernesto as a personal full-stack portfolio project using modern .NET technologies.
+Developed by [ernesto-04](https://github.com/ernesto-04)

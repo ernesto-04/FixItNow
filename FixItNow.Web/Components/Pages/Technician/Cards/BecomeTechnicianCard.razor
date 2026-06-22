@@ -1,0 +1,138 @@
+﻿@using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians
+@inject AppState AppState
+@inject UserApiService UserApiService
+@inject AuthenticationStateProvider AuthStateProvider
+@implements IDisposable
+
+@if (AppState.ShowTechnicianPanel)
+{
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000;"
+         @onclick="Close" />
+
+    <div style="position:fixed; top:0; right:0; height:100vh; width:440px;
+                    background:#fff; z-index:1001; overflow-y:auto;
+                    box-shadow:-4px 0 24px rgba(0,0,0,0.12);
+                    padding:32px; box-sizing:border-box;">
+
+        <div style="display:flex; align-items:center;
+                        justify-content:space-between; margin-bottom:24px;">
+            <div>
+                <div style="font-size:20px; font-weight:700; color:var(--text);">
+                    Become a Technician
+                </div>
+                <div style="font-size:13px; color:var(--muted); margin-top:4px;">
+                    Complete your professional profile
+                </div>
+            </div>
+            <button @onclick="Close"
+                    style="background:none; border:none; cursor:pointer;
+                               font-size:20px; color:var(--muted); padding:4px; line-height:1;">
+                ✕
+            </button>
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">Skills</label>
+            <input type="text"
+                   value="@_request.Skills"
+                   @oninput="@(e => _request.Skills = e.Value?.ToString() ?? "")"
+                   placeholder="e.g. Plumbing, Electrical, AC Repair"
+                   style="width:100%; padding:10px 12px; border:1px solid var(--border);
+                              border-radius:8px; font-size:14px; font-family:inherit;
+                              color:var(--text); box-sizing:border-box; outline:none;" />
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">
+                Separate skills with commas
+            </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">Location</label>
+            <input type="text"
+                   value="@_request.Location"
+                   @oninput="@(e => _request.Location = e.Value?.ToString() ?? "")"
+                   placeholder="e.g. Jakarta, Indonesia"
+                   style="width:100%; padding:10px 12px; border:1px solid var(--border);
+                              border-radius:8px; font-size:14px; font-family:inherit;
+                              color:var(--text); box-sizing:border-box; outline:none;" />
+        </div>
+
+        <div style="margin-bottom:24px;">
+            <label style="display:block; font-size:13px; font-weight:600;
+                              color:var(--text); margin-bottom:6px;">Short Bio</label>
+            <textarea rows="4"
+                      value="@_request.Bio"
+                      @oninput="@(e => _request.Bio = e.Value?.ToString() ?? "")"
+                      placeholder="Tell customers about yourself..."
+                      style="width:100%; padding:10px 12px; border:1px solid var(--border);
+                                 border-radius:8px; font-size:14px; font-family:inherit;
+                                 color:var(--text); box-sizing:border-box; outline:none;
+                                 resize:vertical;" />
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div style="font-size:13px; color:#ef4444; margin-bottom:12px;">
+                @_error
+            </div>
+        }
+
+        <button class="btn btn-primary"
+                style="width:100%; justify-content:center; padding:14px;"
+                disabled="@_isSubmitting"
+                @onclick="SubmitAsync">
+            @if (_isSubmitting)
+            {
+                <span>Submitting...</span>
+            }
+            else
+            {
+                <span>Submit Application</span>
+            }
+        </button>
+
+    </div>
+}
+
+@code {
+    private readonly CreateTechnicianProfileRequest _request = new();
+    private bool _isSubmitting;
+    private string _error = string.Empty;
+
+    protected override void OnInitialized() => AppState.OnChange += Refresh;
+    private void Refresh() => InvokeAsync(StateHasChanged);
+    public void Dispose() => AppState.OnChange -= Refresh;
+
+    private void Close()
+    {
+        AppState.ShowTechnicianPanel = false;
+        _error = string.Empty;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _isSubmitting = true;
+        _error = string.Empty;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
+            if (claim is null) return;
+
+            await UserApiService.BecomeTechnicianAsync(int.Parse(claim.Value), _request);
+
+            AppState.SetTechnicianStatus(exists: true, isApproved: false, isRejected: false);
+            Close();
+        }
+        catch (Exception ex)
+        {
+            _error = "Something went wrong. Please try again.";
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

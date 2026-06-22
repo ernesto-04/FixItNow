@@ -1,9 +1,12 @@
-﻿@inherits LayoutComponentBase
+﻿@using FixItNow.Web.Components.Pages.Technician.Cards
+@inherits LayoutComponentBase
+@inject AppState AppState
+@inject AuthenticationStateProvider AuthStateProvider
+@implements IDisposable
 
 <MudThemeProvider Theme="ThemeHelper.Default" />
 <MudPopoverProvider />
 <MudSnackbarProvider />
-
 <MudLayout>
     <MudAppBar Elevation="0" Fixed="false" Class="app-topbar" Style="padding:0;">
         <TopBar />
@@ -12,7 +15,9 @@
         @if (!_authReady)
         {
             <div style="display:flex;align-items:center;justify-content:center;min-height:80vh;">
-                <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+                <div style="width:48px;height:48px;border:4px solid #e4e5e7;
+                            border-top-color:#1DBF73;border-radius:50%;
+                            animation:spin 0.8s linear infinite;"></div>
             </div>
         }
         else
@@ -20,15 +25,37 @@
             @Body
         }
     </MudMainContent>
+    @if (_authReady && !_isAdmin)
+    {
+        <BecomeTechnicianCard />
+    }
 </MudLayout>
 
 @code {
     private bool _authReady;
+    private bool _isAdmin;
+
+    protected override void OnInitialized() => AppState.OnChange += Refresh;
+    private void Refresh() => InvokeAsync(StateHasChanged);
+    public void Dispose() => AppState.OnChange -= Refresh;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        _authReady = true;
-        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            _isAdmin = authState.User.FindFirstValue("IsAdmin") == "True";
+        }
+        catch
+        {
+            _isAdmin = false;
+        }
+        finally
+        {
+            _authReady = true;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 }

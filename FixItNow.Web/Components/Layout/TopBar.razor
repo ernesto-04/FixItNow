@@ -6,9 +6,7 @@
 @inject UserApiService UserApiService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject TechnicianApiService TechnicianApiService
-@inject AppState AppState
 @inject NotificationApiService NotificationApiService
-@inject AuthenticatedHttpService AuthenticatedHttpService
 
 <div class="topbar-inner" style="width:100%;">
 
@@ -26,7 +24,7 @@
 
         @if (!_isAdmin)
         {
-            <NavLink href="/technicians" Match="NavLinkMatch.Prefix" class="topbar-link" ActiveClass="active">
+            <NavLink href="/technicians" Match="NavLinkMatch.Prefix" class="topbar-link topbar-link-highlight" ActiveClass="active">
                 Browse Technicians
             </NavLink>
 
@@ -62,15 +60,6 @@
         {
             @if (!_isAdmin)
             {
-                @if (AppState.Mode == AppState.TechnicianMode)
-                {
-                    <MudSwitch T="bool"
-                               Value="AppState.IsTechnicianOnline"
-                               ValueChanged="OnToggleOnlineStatus"
-                               Color="Color.Success"
-                               Label="@(AppState.IsTechnicianOnline ? "Online" : "Offline")"
-                               Class="mr-2" />
-                }
                 @if (_isTechnician)
                 {
                     <div class="topbar-mode-tabs">
@@ -84,86 +73,101 @@
                         </button>
                     </div>
                 }
+                else if (AppState.IsTechnicianPending)
+                {
+                    <span style="font-size:13px; color:var(--muted);
+                                                 padding:8px 16px; border:1px solid var(--border);
+                                                 border-radius:8px;">
+                        ⏳ Pending approval
+                    </span>
+                }
+                else if (AppState.IsTechnicianRejected)
+                {
+                    <button class="btn btn-outline"
+                            style="font-size:13px; padding:8px 16px;
+                                                   border-color:#ef4444; color:#ef4444;"
+                            @onclick="AppState.OpenTechnicianPanel">
+                        ✕ Rejected — Re-apply
+                    </button>
+                }
                 else
                 {
                     <button class="btn btn-outline" style="font-size:13px; padding:8px 16px;"
-                            @onclick="@(() => _showTechnicianPanel = true)">
+                            @onclick="AppState.OpenTechnicianPanel">
                         Become a Technician
                     </button>
                 }
             }
 
-            <!-- notification bell stays for everyone -->
+            <!-- NOTIFICATION BELL -->
             <div style="position:relative; margin-right:8px;">
-                <div style="position:relative; margin-right:8px;">
-                    <button @onclick="ToggleNotifications"
-                            style="background:none; border:none; cursor:pointer;
-                                   padding:8px; color:var(--text); position:relative;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                             viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                        </svg>
-                        @if (AppState.UnreadNotificationCount > 0)
-                        {
-                            <span style="position:absolute; top:4px; right:4px;
-                                             background:#ef4444; color:white; border-radius:50%;
-                                             width:16px; height:16px; font-size:10px; font-weight:700;
-                                             display:flex; align-items:center; justify-content:center;">
-                                @(AppState.UnreadNotificationCount > 9 ? "9+" : AppState.UnreadNotificationCount.ToString())
-                            </span>
-                        }
-                    </button>
-
-                    @if (_showNotifications)
+                <button @onclick="ToggleNotifications"
+                        style="background:none; border:none; cursor:pointer;
+                                       padding:8px; color:var(--text); position:relative;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                    @if (AppState.UnreadNotificationCount > 0)
                     {
-                        <div style="position:absolute; right:0; top:44px; width:320px;
-                                        background:white; border:1px solid var(--border);
-                                        border-radius:var(--radius-lg); box-shadow:0 4px 20px rgba(0,0,0,0.12);
-                                        z-index:1000; overflow:hidden;">
-                            <div style="padding:14px 16px; border-bottom:1px solid var(--border);
-                                            display:flex; align-items:center; justify-content:space-between;">
-                                <span style="font-size:14px; font-weight:700; color:var(--text);">
-                                    Notifications
-                                </span>
-                                @if (AppState.UnreadNotificationCount > 0)
-                                {
-                                    <button @onclick="MarkAllRead"
-                                            style="background:none; border:none; font-size:12px;
-                                                           color:var(--green); cursor:pointer; font-family:inherit;">
-                                        Mark all read
-                                    </button>
-                                }
-                            </div>
+                        <span style="position:absolute; top:4px; right:4px;
+                                                 background:#ef4444; color:white; border-radius:50%;
+                                                 width:16px; height:16px; font-size:10px; font-weight:700;
+                                                 display:flex; align-items:center; justify-content:center;">
+                            @(AppState.UnreadNotificationCount > 9 ? "9+" : AppState.UnreadNotificationCount.ToString())
+                        </span>
+                    }
+                </button>
 
-                            @if (!AppState.UnreadNotifications.Any())
+                @if (_showNotifications)
+                {
+                    <div style="position:absolute; right:0; top:44px; width:320px;
+                                            background:white; border:1px solid var(--border);
+                                            border-radius:var(--radius-lg); box-shadow:0 4px 20px rgba(0,0,0,0.12);
+                                            z-index:1000; overflow:hidden;">
+                        <div style="padding:14px 16px; border-bottom:1px solid var(--border);
+                                                display:flex; align-items:center; justify-content:space-between;">
+                            <span style="font-size:14px; font-weight:700; color:var(--text);">
+                                Notifications
+                            </span>
+                            @if (AppState.UnreadNotificationCount > 0)
                             {
-                                <div style="padding:32px 16px; text-align:center;
-                                                    font-size:13px; color:var(--muted);">
-                                    No new notifications
-                                </div>
-                            }
-                            else
-                            {
-                                @foreach (var n in AppState.UnreadNotifications)
-                                {
-                                    <div @onclick="@(() => HandleNotificationClick(n))"
-                                         style="padding:12px 16px; border-bottom:1px solid var(--border);
-                                                            cursor:pointer; font-size:13px; color:var(--text);
-                                                            transition:background .15s;"
-                                         onmouseover="this.style.background='#f9f9f9'"
-                                         onmouseout="this.style.background='white'">
-                                        <div style="font-weight:500; margin-bottom:2px;">@n.Message</div>
-                                        <div style="font-size:11px; color:var(--muted);">
-                                            @n.CreatedAt.ToLocalTime().ToString("MMM dd · h:mm tt")
-                                        </div>
-                                    </div>
-                                }
+                                <button @onclick="MarkAllRead"
+                                        style="background:none; border:none; font-size:12px;
+                                                               color:var(--green); cursor:pointer; font-family:inherit;">
+                                    Mark all read
+                                </button>
                             }
                         </div>
-                    }
-                </div>
+
+                        @if (!AppState.UnreadNotifications.Any())
+                        {
+                            <div style="padding:32px 16px; text-align:center;
+                                                        font-size:13px; color:var(--muted);">
+                                No new notifications
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var n in AppState.UnreadNotifications)
+                            {
+                                <div @onclick="@(() => HandleNotificationClick(n))"
+                                     style="padding:12px 16px; border-bottom:1px solid var(--border);
+                                                                cursor:pointer; font-size:13px; color:var(--text);
+                                                                transition:background .15s;"
+                                     onmouseover="this.style.background='#f9f9f9'"
+                                     onmouseout="this.style.background='white'">
+                                    <div style="font-weight:500; margin-bottom:2px;">@n.Message</div>
+                                    <div style="font-size:11px; color:var(--muted);">
+                                        @n.CreatedAt.ToLocalTime().ToString("MMM dd · h:mm tt")
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
             </div>
 
             <Profile />
@@ -176,7 +180,7 @@
             </button>
             <button class="btn btn-primary" style="font-size:13px; padding:8px 16px;"
                     @onclick="@(() => NavigationManager.NavigateTo("/register"))">
-                Join Free
+                Sign Up
             </button>
         }
     }
@@ -184,63 +188,19 @@
     {
         <div style="width:160px; height:36px;"></div>
     }
-
 </div>
 
-<!-- BECOME TECHNICIAN PANEL -->
-<MudDrawer Anchor="Anchor.End" Width="440px" Elevation="12"
-           Variant="DrawerVariant.Temporary" Class="technician-panel"
-           @bind-Open="_showTechnicianPanel">
-    <div style="padding:32px;">
-
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
-            <div>
-                <div style="font-size:20px; font-weight:700; color:var(--text);">Become a Technician</div>
-                <div style="font-size:13px; color:var(--muted); margin-top:4px;">Complete your professional profile</div>
-            </div>
-            <MudIconButton Icon="@Icons.Material.Filled.Close"
-                           OnClick="@(() => _showTechnicianPanel = false)" />
-        </div>
-
-        <MudTextField Label="Skills" Variant="Variant.Outlined"
-                      @bind-Value="_request.Skills" Class="mb-4"
-                      HelperText="e.g. Plumbing, Electrical, AC Repair" />
-
-        <MudTextField Label="Location" Variant="Variant.Outlined"
-                      @bind-Value="_request.Location" Class="mb-4" />
-
-        <MudTextField Label="Short Bio" Variant="Variant.Outlined"
-                      Lines="4" @bind-Value="_request.Bio" Class="mb-6" />
-
-        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:14px;"
-                disabled="@_isSubmitting" @onclick="SubmitBecomeTechnician">
-            @if (_isSubmitting)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-            }
-            Submit Application
-        </button>
-
-    </div>
-</MudDrawer>
-
 @code {
-    private bool _showTechnicianPanel;
-    private bool _isSubmitting;
     private bool _isTechnician;
     private bool _isAuthenticated;
     private bool _topbarReady;
-    private bool _isAdmin = false;
-
-    private readonly CreateTechnicianProfileRequest _request = new();
-
-    protected override void OnInitialized() => AppState.OnChange += Refresh;
-
+    private bool _isAdmin;
     private bool _showNotifications;
     private HubConnection? _hubConnection;
 
-    private void ToggleNotifications() =>
-        _showNotifications = !_showNotifications;
+    protected override void OnInitialized() => AppState.OnChange += Refresh;
+
+    private void ToggleNotifications() => _showNotifications = !_showNotifications;
 
     private async Task MarkAllRead()
     {
@@ -261,45 +221,42 @@
             NavigationManager.NavigateTo($"/ticket/{notification.ReferenceId}");
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        AppState.OnChange -= Refresh;
-        if (_hubConnection is not null)
-            await _hubConnection.DisposeAsync();
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-
-        _isTechnician = await UserApiService.IsTechnicianAsync();
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
 
         if (_isAuthenticated)
         {
-            _isTechnician = await UserApiService.IsTechnicianAsync();
-            _isAdmin = authState.User.FindFirstValue("IsAdmin") == "True"; 
-
-            if (_isTechnician && !_isAdmin)
-            {
-                var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
-                if (claim is not null)
-                {
-                    var profile = await TechnicianApiService.GetTechnicianByIdAsync(int.Parse(claim.Value));
-                    AppState.IsTechnicianOnline = profile?.IsOnline ?? false;
-                }
-            }
+            _isAdmin = authState.User.FindFirstValue("IsAdmin") == "True";
+            AppState.SetAdminStatus(_isAdmin);
 
             if (!_isAdmin)
             {
+                var status = await UserApiService.GetTechnicianStatusAsync();
+                _isTechnician = status?.IsApproved == true;
+                AppState.SetTechnicianStatus(
+                    exists: status is not null,
+                    isApproved: status?.IsApproved == true,
+                    isRejected: status?.IsRejected == true);
+
+                if (_isTechnician)
+                {
+                    var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
+                    if (claim is not null)
+                    {
+                        var profile = await TechnicianApiService.GetTechnicianByIdAsync(int.Parse(claim.Value));
+                        AppState.IsTechnicianOnline = profile?.IsOnline ?? false;
+                    }
+                }
+
                 var notifications = await NotificationApiService.GetUnreadAsync();
                 AppState.SetNotifications(notifications);
             }
         }
 
-        var client = await AuthenticatedHttpService.GetClientAsync();
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/chatHub"), options =>
             {
@@ -337,38 +294,11 @@
         NavigationManager.NavigateTo("/dashboard", forceLoad: true);
     }
 
-    private async Task SubmitBecomeTechnician()
+    public async ValueTask DisposeAsync()
     {
-        _isSubmitting = true;
-        try
-        {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
-            if (claim is null) return;
-
-            await UserApiService.BecomeTechnicianAsync(int.Parse(claim.Value), _request);
-
-            _isTechnician = true;
-            _showTechnicianPanel = false;
-            await SwitchMode("technician");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-        finally
-        {
-            _isSubmitting = false;
-        }
-    }
-
-    private async Task OnToggleOnlineStatus(bool isOnline)
-    {
-        var success = await TechnicianApiService.SetOnlineStatusAsync(isOnline);
-        if (success)
-        {
-            AppState.IsTechnicianOnline = isOnline;
-        }
+        AppState.OnChange -= Refresh;
+        if (_hubConnection is not null)
+            await _hubConnection.DisposeAsync();
     }
 
     public void Dispose() => AppState.OnChange -= Refresh;

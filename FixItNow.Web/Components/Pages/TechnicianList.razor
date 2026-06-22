@@ -19,30 +19,27 @@
         <!-- PAGE HEADER -->
         <div style="padding: 40px 48px 0;">
             <h1 style="font-size:32px; font-weight:800; color:var(--text);
-                           letter-spacing:-0.8px; margin-bottom:6px;">
+                   letter-spacing:-0.8px; margin-bottom:6px;">
                 Browse Technicians
             </h1>
             <p style="font-size:15px; color:var(--muted); margin-bottom:32px;">
                 Find and book skilled professionals near you
             </p>
-
-            <!-- CATEGORY PILLS — Fiverr style icon grid -->
-            <div style="display:flex; gap:12px; overflow-x:auto;
-                            padding-bottom:8px; scrollbar-width:none;
-                            border-bottom:1px solid var(--border);
-                            margin-bottom:0;">
+            <div style="display:flex; gap:4px; overflow-x:auto;
+                    padding-bottom:0; scrollbar-width:none;
+                    border-bottom:1px solid var(--border);">
                 @foreach (var cat in _categories)
                 {
                     <div @onclick="@(() => SelectCategory(cat.Label))"
                          style="display:flex; flex-direction:column; align-items:center;
-                                        gap:8px; padding:12px 16px; cursor:pointer;
-                                        white-space:nowrap; flex-shrink:0;
-                                        border-bottom: 2px solid @(_activeCategory == cat.Label ? "var(--text)" : "transparent");
-                                        transition: all .15s ease;
-                                        opacity: @(_activeCategory == cat.Label ? "1" : "0.65");">
-                        <span style="font-size:24px; line-height:1;">@cat.Icon</span>
+                                gap:6px; padding:10px 20px; cursor:pointer;
+                                white-space:nowrap; flex-shrink:0;
+                                border-bottom: 2px solid @(_activeCategory == cat.Label ? "var(--green)" : "transparent");
+                                transition: all .15s ease;
+                                opacity: @(_activeCategory == cat.Label ? "1" : "0.55");">
+                        <i class="@cat.Icon" style="font-size:20px; color:var(--text);"></i>
                         <span style="font-size:12px; font-weight:@(_activeCategory == cat.Label ? "700" : "500");
-                                             color:var(--text);">
+                                     color:var(--text);">
                             @cat.Label
                         </span>
                     </div>
@@ -51,100 +48,57 @@
         </div>
 
         <!-- FILTER BAR -->
-        <div style="padding: 24px 48px; background:#fff;
-                        border-bottom: 1px solid var(--border);
-                        position:sticky; top:72px; z-index:50;">
-            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <div class="filter-bar">
+            <div class="filter-row">
 
                 <!-- SEARCH -->
-                <div style="display:flex; align-items:center; gap:8px;
-                                 background:#f5f5f5; border-radius:6px;
-                                 padding:10px 16px; flex:1; min-width:200px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                         viewBox="0 0 24 24" fill="none" stroke="#999"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
+                <div class="filter-input-wrap filter-input-grow">
+                    <i class="bi bi-search filter-input-icon"></i>
                     <input type="text"
                            placeholder="Search by name..."
                            value="@_searchName"
                            @oninput="@(e => { _searchName = e.Value?.ToString() ?? ""; ApplyFilters(); })"
-                           style="border:none; background:transparent; outline:none;
-                                      font-size:14px; color:var(--text); width:100%;
-                                      font-family:inherit;" />
+                           class="filter-input" />
                 </div>
 
-                <!-- SKILL FILTER -->
-                <div style="display:flex; align-items:center; gap:8px;
-                                 background:#f5f5f5; border-radius:6px;
-                                 padding:10px 16px; min-width:180px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                         viewBox="0 0 24 24" fill="none" stroke="#999"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                    </svg>
+                <!-- SKILL -->
+                <div class="filter-input-wrap">
+                    <i class="bi bi-tools filter-input-icon"></i>
                     <input type="text"
                            placeholder="Filter by skill..."
                            value="@_searchSkill"
                            @oninput="@(e => { _searchSkill = e.Value?.ToString() ?? ""; ApplyFilters(); })"
-                           style="border:none; background:transparent; outline:none;
-                                      font-size:14px; color:var(--text); width:100%;
-                                      font-family:inherit;" />
+                           class="filter-input" />
                 </div>
 
-                <!-- LOCATION FILTER -->
-                <div style="display:flex; align-items:center; gap:8px;
-                                 background:#f5f5f5; border-radius:6px;
-                                 padding:10px 16px; min-width:180px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                         viewBox="0 0 24 24" fill="none" stroke="#999"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
-                    </svg>
+                <!-- LOCATION -->
+                <div class="filter-input-wrap">
+                    <i class="bi bi-geo-alt filter-input-icon"></i>
                     <input type="text"
                            placeholder="Filter by location..."
                            value="@_searchLocation"
                            @oninput="@(e => { _searchLocation = e.Value?.ToString() ?? ""; ApplyFilters(); })"
-                           style="border:none; background:transparent; outline:none;
-                                      font-size:14px; color:var(--text); width:100%;
-                                      font-family:inherit;" />
+                           class="filter-input" />
                 </div>
 
-                <!-- PRICE FILTER -->
-                <div style="display:flex; align-items:center; gap:8px;
-                 background:#f5f5f5; border-radius:6px;
-                 padding:10px 16px; min-width:160px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                         viewBox="0 0 24 24" fill="none" stroke="#999"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="1" x2="12" y2="23" />
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                    </svg>
+                <!-- PRICE -->
+                <div class="filter-input-wrap filter-price-wrap">
+                    <i class="bi bi-cash filter-input-icon"></i>
                     <input type="number"
-                           placeholder="Min price"
+                           placeholder="Min"
                            value="@_minPrice"
                            @oninput="@(e => { _minPrice = decimal.TryParse(e.Value?.ToString(), out var v) ? v : null; ApplyFilters(); })"
-                           style="border:none; background:transparent; outline:none;
-                      font-size:14px; color:var(--text); width:80px;
-                      font-family:inherit;" />
-                    <span style="color:#ccc;">—</span>
+                           class="filter-input filter-price-input" />
+                    <span class="filter-price-sep">–</span>
                     <input type="number"
                            placeholder="Max"
                            value="@_maxPrice"
                            @oninput="@(e => { _maxPrice = decimal.TryParse(e.Value?.ToString(), out var v) ? v : null; ApplyFilters(); })"
-                           style="border:none; background:transparent; outline:none;
-                      font-size:14px; color:var(--text); width:60px;
-                      font-family:inherit;" />
+                           class="filter-input filter-price-input" />
                 </div>
 
                 <!-- SORT -->
-                <select @bind="_sortBy"
-                        @bind:after="ApplyFilters"
-                        style="background:#f5f5f5; border:none; border-radius:6px;
-                                   padding:10px 16px; font-size:14px; color:var(--text);
-                                   font-family:inherit; cursor:pointer; outline:none;">
+                <select @bind="_sortBy" @bind:after="ApplyFilters" class="filter-select">
                     <option value="default">Sort: Default</option>
                     <option value="rating">Highest Rated</option>
                     <option value="jobs">Most Jobs</option>
@@ -152,45 +106,39 @@
                 </select>
 
                 <!-- CLEAR -->
-                @if (_searchName != "" || _searchSkill != "" ||
-                            _searchLocation != "" || _minRating > 0 ||
-                            _activeCategory != "All" || _minPrice.HasValue || _maxPrice.HasValue)
+                @if (_searchName != "" || _searchSkill != "" || _searchLocation != "" ||
+                            _minRating > 0 || _activeCategory != "All" ||
+                            _minPrice.HasValue || _maxPrice.HasValue)
                 {
-                    <button @onclick="ClearFilters"
-                            style="background:none; border:none; font-size:13px;
-                                           color:var(--muted); cursor:pointer; font-family:inherit;
-                                           padding:10px 8px; white-space:nowrap;">
-                        ✕ Clear
+                    <button @onclick="ClearFilters" class="filter-clear">
+                        <i class="bi bi-x"></i> Clear
                     </button>
                 }
 
             </div>
 
-            <!-- RATING FILTER + RESULTS COUNT -->
-            <div style="display:flex; align-items:center;
-                            justify-content:space-between; margin-top:14px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:13px; color:var(--muted); font-weight:500;">
-                        Min Rating:
-                    </span>
+            <!-- RATING + RESULTS -->
+            <div class="filter-meta">
+                <div class="filter-rating">
+                    <span class="filter-rating-label">Min Rating:</span>
                     <MudRating @bind-SelectedValue="_minRating"
                                @bind-SelectedValue:after="ApplyFilters"
                                Size="Size.Small" />
                 </div>
-                <span style="font-size:13px; color:var(--muted);">
+                <span class="filter-results">
                     @_filtered.Count result@(_filtered.Count == 1 ? "" : "s")
                 </span>
             </div>
         </div>
-
         <!-- RESULTS -->
         <div style="padding: 32px 48px;">
             @if (_filtered.Count == 0)
             {
                 <div class="empty-state">
-                    <div class="empty-state-icon">🔍</div>
+                    <i class="bi bi-search empty-state-icon"></i>
                     <div class="empty-state-title">No technicians found</div>
                     <div class="empty-state-text">Try adjusting your filters</div>
+                    <button class="btn btn-outline" @onclick="ClearFilters">Clear filters</button>
                 </div>
             }
             else
@@ -201,9 +149,8 @@
                         <div class="tech-card"
                              @onclick="@(() => NavigationManager.NavigateTo($"/technicians/{tech.UserId}"))">
 
-                            <!-- BANNER + AVATAR -->
-                            <div class="tech-card-header"></div>
-                            <div style="position:relative; padding:0 20px;">
+                            <!-- AVATAR ROW -->
+                            <div class="tech-card-top">
                                 <div class="tech-card-avatar">
                                     @if (!string.IsNullOrWhiteSpace(tech.ProfileImageUrl)
                                                             && Uri.IsWellFormedUriString(tech.ProfileImageUrl, UriKind.Absolute))
@@ -215,33 +162,41 @@
                                         @tech.FullName.FirstOrDefault()
                                     }
                                 </div>
+                                @if (tech.IsOnline)
+                                {
+                                    <span class="tech-online-badge">Online</span>
+                                }
                             </div>
 
                             <!-- BODY -->
                             <div class="tech-card-body">
-                                <TechnicianActiveCard Technician="tech" />
                                 <div class="tech-card-name">@tech.FullName</div>
-                                <div class="tech-card-location">📍 @tech.Location</div>
-                                <div class="tech-card-bio">@TextHelper.Shorten(tech.Bio)</div>
-                                <div class="tech-card-skills">Skills</div>
-                                <div class="tech-card-skills-value">@tech.Skills</div>
+                                <div class="tech-card-location">
+                                    <i class="bi bi-geo-alt"></i> @tech.Location
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(tech.Bio))
+                                {
+                                    <div class="tech-card-bio">@TextHelper.Shorten(tech.Bio)</div>
+                                }
+                                <div class="tech-card-skill-pills">
+                                    @foreach (var skill in (tech.Skills ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                    {
+                                        <span class="tech-skill-pill">@skill.Trim()</span>
+                                    }
+                                </div>
                             </div>
 
                             <!-- FOOTER -->
                             <div class="tech-card-footer">
                                 <div class="tech-rating">
                                     <span class="tech-rating-star">★</span>
-                                    <span>
-                                        @(tech.AverageRating > 0 ? tech.AverageRating.ToString("0.0") : "New")
-                                    </span>
+                                    <span>@(tech.AverageRating > 0 ? tech.AverageRating.ToString("0.0") : "New")</span>
                                     @if (tech.CompletedJobs > 0)
                                     {
-                                        <span style="color:var(--muted); font-weight:400;">
-                                            (@tech.CompletedJobs jobs)
-                                        </span>
+                                        <span class="tech-jobs-count">&nbsp;(@tech.CompletedJobs jobs)</span>
                                     }
                                 </div>
-                                <div style="font-size:13px; font-weight:700; color:var(--green-dark);">
+                                <div class="tech-card-price">
                                     @TextHelper.FormatRate(tech.HourlyRate, tech.CallOutFee)
                                 </div>
                             </div>
@@ -279,15 +234,15 @@
 
     private readonly List<(string Icon, string Label)> _categories = new()
     {
-        ("🔧", "All"),
-        ("🚿", "Plumbing"),
-        ("⚡", "Electrical"),
-        ("❄️", "AC Repair"),
-        ("🏠", "Renovation"),
-        ("🎨", "Painting"),
-        ("🔒", "Locksmith"),
-        ("🌿", "Cleaning"),
-        ("📦", "Moving"),
+        ("bi bi-grid-fill", "All"),
+        ("bi bi-wrench", "Plumbing"),
+        ("bi bi-lightning-charge", "Electrical"),
+        ("bi bi-snow", "AC Repair"),
+        ("bi bi-house-gear", "Renovation"),
+        ("bi bi-brush", "Painting"),
+        ("bi bi-shield-lock", "Locksmith"),
+        ("bi bi-stars", "Cleaning"),
+        ("bi bi-box-seam", "Moving"),
     };
 
     private void SelectCategory(string category)

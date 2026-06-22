@@ -214,6 +214,7 @@
             _pageError = string.Empty;
             _isLoading = true;
             var response = await _authService.LoginAsync(authRequest);
+            AppState.Reset();
             await ((CustomAuthStateProvider)_authStateProvider)
                 .StartSession(response.Token);
 

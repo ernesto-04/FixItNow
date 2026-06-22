@@ -31,17 +31,20 @@
             <div style="display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:0;">
                 @foreach (var tab in new[] { "Pending", "Rejected" })
                 {
+                    var count = tab == "Pending" ? _pending.Count : _rejected.Count;
+
                     <div @onclick="@(() => _activeTab = tab)"
                          style="padding:12px 24px; cursor:pointer; font-size:14px;
-                                        font-weight:@(_activeTab == tab ? "700" : "500");
-                                        color:@(_activeTab == tab ? "var(--text)" : "var(--muted)");
-                                        border-bottom:2px solid @(_activeTab == tab ? "var(--text)" : "transparent");
-                                        transition:all .15s ease;">
+                        font-weight:@(_activeTab == tab ? "700" : "500");
+                        color:@(_activeTab == tab ? "var(--text)" : "var(--muted)");
+                        border-bottom:2px solid @(_activeTab == tab ? "var(--text)" : "transparent");
+                        transition:all .15s ease;">
                         @tab
-                        <span style="margin-left:6px; background:@(_activeTab == tab ? "var(--text)" : "#eee");
-                                             color:@(_activeTab == tab ? "#fff" : "var(--muted)");
-                                             border-radius:99px; padding:2px 8px; font-size:12px;">
-                            @(_activeTab == "Pending" ? _pending.Count : _rejected.Count)
+                        <span style="margin-left:6px;
+                             background:@(_activeTab == tab ? "var(--text)" : "#eee");
+                             color:@(_activeTab == tab ? "#fff" : "var(--muted)");
+                             border-radius:99px; padding:2px 8px; font-size:12px;">
+                            @count
                         </span>
                     </div>
                 }

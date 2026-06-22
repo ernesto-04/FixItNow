@@ -153,6 +153,7 @@
 
     private async Task OnLogoutClicked()
     {
+        AppState.Reset();
         await ((CustomAuthStateProvider)AuthProvider).EndSession();
         AppState.SetMode(AppState.CustomerMode);
         Nav.NavigateTo("/dashboard", forceLoad: true);

@@ -6,6 +6,7 @@
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 @inject AuthenticationStateProvider AuthStateProvider
+@inject AppState AppState
 
 <div>
 
@@ -257,6 +258,33 @@
 
                 </div>
 
+                <!-- AVAILABILITY -->
+                <div style="padding:20px 24px; border-bottom:1px solid var(--border);">
+                    <div style="display:flex; align-items:center;
+                                    justify-content:space-between;">
+                        <div>
+                            <div style="font-size:15px; font-weight:700;
+                                            color:var(--text); margin-bottom:4px;">
+                                Availability
+                            </div>
+                            <div style="font-size:13px; color:var(--muted);">
+                                @if (AppState.IsTechnicianOnline)
+                                {
+                                    <span>You're visible to customers and accepting bookings</span>
+                                }
+                                else
+                                {
+                                    <span>You're hidden from search — new bookings are paused</span>
+                                }
+                            </div>
+                        </div>
+                        <MudSwitch T="bool"
+                                   Value="AppState.IsTechnicianOnline"
+                                   ValueChanged="OnToggleOnlineStatus"
+                                   Color="Color.Success" />
+                    </div>
+                </div>
+
                 <!-- SAVE BUTTON -->
                 <div style="padding:20px 24px; background:#fafafa;">
                     <button class="btn btn-primary"
@@ -387,6 +415,15 @@
         finally
         {
             _isSaving = false;
+        }
+    }
+
+    private async Task OnToggleOnlineStatus(bool isOnline)
+    {
+        var success = await TechnicianApiService.SetOnlineStatusAsync(isOnline);
+        if (success)
+        {
+            AppState.IsTechnicianOnline = isOnline;
         }
     }
 }

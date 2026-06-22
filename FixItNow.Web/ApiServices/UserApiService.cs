@@ -1,4 +1,5 @@
 ﻿using FixItNow.Domain.Models.BookingRequest.DTOs.Technicians;
+using static System.Net.WebRequestMethods;
 
 public class UserApiService
 {
@@ -19,5 +20,13 @@ public class UserApiService
     public async Task BecomeTechnicianAsync(int userId, CreateTechnicianProfileRequest request)
     {
         await _httpService.PostAsync($"/api/users/become-technician", request);
+    }
+
+    public async Task<TechnicianProfileDto?> GetTechnicianStatusAsync()
+    {
+        var response = await _httpService.GetAsync("api/users/technician-status");
+        if (!response.IsSuccessStatusCode) return null;
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent) return null;
+        return await response.Content.ReadFromJsonAsync<TechnicianProfileDto>();
     }
 }

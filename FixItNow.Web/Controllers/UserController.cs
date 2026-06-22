@@ -38,6 +38,14 @@ public class UserController : ControllerBase
         return Ok(await _userService.IsTechnicianAsync(GetUserId()));
     }
 
+    [HttpGet("technician-status")]
+    public async Task<IActionResult> GetTechnicianStatusAsync()
+    {
+        var profile = await _userService.GetTechnicianStatusAsync(GetUserId());
+        if (profile is null) return NoContent();
+        return Ok(profile);
+    }
+
     private int GetUserId() =>
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
             ? id

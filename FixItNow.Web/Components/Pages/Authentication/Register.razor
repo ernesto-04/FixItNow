@@ -247,7 +247,7 @@
         {
             _isLoading = true;
             await _authService.RegisterAsync(registerRequest);
-            NavigationManager.NavigateTo("/login", true);
+            NavigationManager.NavigateTo("/login?registered=true", true);
         }
         catch (InvalidOperationException ex)
         {

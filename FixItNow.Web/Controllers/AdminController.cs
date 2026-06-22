@@ -18,15 +18,26 @@ public class AdminController : ControllerBase
     private readonly IAdminService _adminService;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly FixItNowDataContext _context;
+    private readonly SeedService _seedService;
 
     public AdminController(
         IAdminService adminService,
         IHubContext<ChatHub> hubContext,
-        FixItNowDataContext context)
+        FixItNowDataContext context,
+        SeedService seedService)
     {
         _adminService = adminService;
         _hubContext = hubContext;
         _context = context;
+        _seedService = seedService;
+    }
+
+    [HttpPost("seed")]
+    public async Task<IActionResult> SeedData()
+    {
+        if (!IsAdmin) return Forbid();
+        await _seedService.SeedAsync();
+        return Ok("Seeded.");
     }
 
     [HttpPatch("technicians/{userId}/approve")]

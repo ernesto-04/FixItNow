@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<AuthenticatedHttpService>();
+        services.AddScoped<SeedService>();
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 

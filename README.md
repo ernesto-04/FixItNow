@@ -14,6 +14,7 @@ Built with .NET 8, Blazor Server, PostgreSQL, and SignalR — deployed on Micros
 |------|-------|----------|
 | Customer | customer@fixitnow.demo | Demo123! |
 | Technician | technician@fixitnow.demo | Demo123! |
+| Admin | admin@fixitnow.demo | Demo123! |
 
 ---
 
